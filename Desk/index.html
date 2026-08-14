@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive 3D Workspace Studio</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #c0d4e1;
+      color: #111;
+      transition: background-color 0.6s ease;
+    }
+
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Hero Branding Text */
+    .hero-text {
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+      z-index: 10;
+      pointer-events: none;
+      max-width: 440px;
+      transition: color 0.6s ease;
+      color: #111827;
+    }
+    .hero-text h1 {
+      font-size: 2.2rem;
+      font-weight: 400;
+      line-height: 1.2;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .hero-text p {
+      font-size: 0.95rem;
+      opacity: 0.75;
+    }
+
+    /* Dark Theme Overrides */
+    body.dark-theme {
+      background-color: #182833;
+    }
+    body.dark-theme .hero-text {
+      color: #ffffff;
+    }
+
+    /* Modals / Overlays */
+    .overlay-panel {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 50%;
+      height: 100%;
+      background: #f9f9f9;
+      color: #111;
+      z-index: 100;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.3);
+      transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 50px;
+      overflow-y: auto;
+    }
+    .overlay-panel.active {
+      right: 0;
+    }
+    .close-btn {
+      position: absolute;
+      top: 25px;
+      right: 25px;
+      background: #111;
+      color: #fff;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content h2 {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+    }
+    .modal-content p {
+      line-height: 1.6;
+      color: #444;
+      margin-bottom: 15px;
+    }
+
+    .contact-form input, .contact-form textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .contact-form button {
+      padding: 12px 24px;
+      background: #111;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    /* Preloader styling */
+    #preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #c0d4e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+    }
+    #preloader.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loader-content {
+      text-align: center;
+    }
+    .loader-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(0, 0, 0, 0.1);
+      border-top-color: #111;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    .loader-text {
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: #111;
+      letter-spacing: 0.05em;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Dark mode preloader */
+    body.dark-theme #preloader {
+      background-color: #182833;
+    }
+    body.dark-theme .loader-spinner {
+      border-color: rgba(255, 255, 255, 0.1);
+      border-top-color: #fff;
+    }
+    body.dark-theme .loader-text {
+      color: #fff;
+    }
+  </style>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Preloader HTML -->
+  <div id="preloader">
+    <div class="loader-content">
+      <div class="loader-spinner"></div>
+      <div class="loader-text">Loading Studio... <span id="loader-percent">0%</span></div>
+    </div>
+  </div>
+
+  <canvas id="webgl-canvas"></canvas>
+
+  <div class="hero-text" id="heroText">
+    <h1>Digital experiences for brands people grow to love.</h1>
+    <p>Building websites anchored by one memorable signature scene.</p>
+  </div>
+
+  <!-- Modals -->
+  <div id="modal-about" class="overlay-panel">
+    <button class="close-btn" onclick="closeOverlay('modal-about')">&times;</button>
+    <div class="modal-content">
+      <h2>Building websites anchored by one memorable signature scene.</h2>
+      <p>Growon is an independent web studio handling the entire digital creation process—from design to custom visual content.</p>
+      <hr style="margin: 25px 0;" />
+      <h3>FAQ</h3>
+      <p><b>Q: What should we expect for a website budget?</b><br>A: Projects vary depending on complexity and 3D features.</p>
+      <p><b>Q: What is the turnaround time?</b><br>A: Typically 3 to 6 weeks.</p>
+    </div>
+  </div>
+
+  <div id="modal-work" class="overlay-panel">
+    <button class="close-btn" onclick="closeOverlay('modal-work')">&times;</button>
+    <div class="modal-content">
+      <h2>Selected Works</h2>
+      <p><b>01. DoYoon Kim Studio</b> — Concept Ceramic Showcase</p>
+      <p><b>02. Daam Space</b> — Interactive 3D Room Walkthrough</p>
+      <p><b>03. Blue Jazz Records</b> — 3D Vinyl Player Experience</p>
+    </div>
+  </div>
+
+  <div id="modal-contact" class="overlay-panel">
+    <button class="close-btn" onclick="closeOverlay('modal-contact')">&times;</button>
+    <div class="modal-content">
+      <h2>Contact Us</h2>
+      <form class="contact-form" onsubmit="event.preventDefault(); alert('Inquiry Sent!');">
+        <label>Name / Company</label>
+        <input type="text" placeholder="Your name or company" required />
+        <label>Email</label>
+        <input type="email" placeholder="you@company.com" required />
+        <label>Project Details</label>
+        <textarea rows="4" placeholder="Tell us about your project..."></textarea>
+        <button type="submit">Send Inquiry</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // --- CUSTOM GLB MODEL PATHS ---
+    const MODEL_PATHS = {
+      tree: 'models/tree.glb',
+      chair: 'models/chair.glb',
+      pencil: 'models/pencil.glb',
+      book: 'models/book.glb',
+      monitor: 'models/monitor.glb',
+      cup: 'models/cup.glb'
+    };
+
+    // --- CRT Screen Canvas Texture ---
+    const crtCanvas = document.createElement('canvas');
+    crtCanvas.width = 256;
+    crtCanvas.height = 160;
+    const crtCtx = crtCanvas.getContext('2d');
+    const crtTexture = new THREE.CanvasTexture(crtCanvas);
+
+    let tvPowerState = false;
+    let tvPowerAnim = 0;
+
+    function drawCRTScreen() {
+      crtCtx.fillStyle = '#050505';
+      crtCtx.fillRect(0, 0, crtCanvas.width, crtCanvas.height);
+
+      if (tvPowerState && tvPowerAnim > 0) {
+        if (tvPowerAnim < 0.4) {
+          const h = (1 - tvPowerAnim / 0.4) * crtCanvas.height;
+          crtCtx.fillStyle = '#ffffff';
+          crtCtx.fillRect(0, crtCanvas.height / 2 - h / 2, crtCanvas.width, h + 2);
+        } else {
+          const imgData = crtCtx.createImageData(crtCanvas.width, crtCanvas.height);
+          for (let i = 0; i < imgData.data.length; i += 4) {
+            const v = Math.random() * 255;
+            imgData.data[i] = v * 0.2;
+            imgData.data[i+1] = v * 0.9;
+            imgData.data[i+2] = v * 0.4;
+            imgData.data[i+3] = 255;
+          }
+          crtCtx.putImageData(imgData, 0, 0);
+
+          crtCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          for (let y = 0; y < crtCanvas.height; y += 4) {
+            crtCtx.fillRect(0, y, crtCanvas.width, 2);
+          }
+        }
+      }
+      crtTexture.needsUpdate = true;
+    }
+
+    // --- Web Audio Synth Sound FX ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+
+      if (type === 'tvOn') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(); osc.stop(now + 0.3);
+      } else if (type === 'click') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.05);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+        osc.start(); osc.stop(now + 0.05);
+      } else if (type === 'rustle') {
+        const bufSize = audioCtx.sampleRate * 0.25;
+        const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buf;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 800;
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        noise.start();
+      } else if (type === 'pageFlip') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(350, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+        osc.start(); osc.stop(now + 0.15);
+      } else if (type === 'roll') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(140, now + 0.3);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(); osc.stop(now + 0.3);
+      } else if (type === 'flipBack') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(250, now);
+        osc.frequency.exponentialRampToValueAtTime(550, now + 0.3);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(); osc.stop(now + 0.3);
+      } else if (type === 'swivel') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.linearRampToValueAtTime(70, now + 0.35);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+        osc.start(); osc.stop(now + 0.35);
+      } else if (type === 'music') {
+        const notes = [261.63, 329.63, 392.00];
+        notes.forEach((freq, idx) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'sine';
+          o.frequency.value = freq;
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          g.gain.setValueAtTime(0.08, now + idx * 0.1);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 1.2 + idx * 0.1);
+          o.start(now + idx * 0.1);
+          o.stop(now + 1.2 + idx * 0.1);
+        });
+      }
+    }
+
+    // --- Scene Setup ---
+    const canvas = document.getElementById('webgl-canvas');
+    const scene = new THREE.Scene();
+
+    const lightBgColor = new THREE.Color(0xc0d4e1);
+    const darkBgColor = new THREE.Color(0x182833);
+    scene.background = lightBgColor.clone();
+
+    // Camera - Perfectly framed perspective
+    const initialCamPos = new THREE.Vector3(0.15, 2.5, 3.8);
+    const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.copy(initialCamPos);
+    camera.lookAt(0, 0.65, 0);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // --- Lighting ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+    scene.add(ambientLight);
+
+    const dirLight = new THREE.DirectionalLight(0xfff5ea, 1.4);
+    dirLight.position.set(3, 7, 4);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    scene.add(dirLight);
+
+    const lampSpotLight = new THREE.SpotLight(0xfff0dd, 4.5, 6, Math.PI / 3, 0.4);
+    lampSpotLight.position.set(1.15, 1.70, 0.3);
+    lampSpotLight.target.position.set(0.2, 0.75, 0.1);
+    lampSpotLight.castShadow = true;
+    scene.add(lampSpotLight);
+    scene.add(lampSpotLight.target);
+
+    let isLampOn = true;
+
+    function applyTheme(lampState) {
+      const targetBg = lampState ? lightBgColor : darkBgColor;
+      scene.background.copy(targetBg);
+      
+      ambientLight.intensity = lampState ? 1.0 : 0.3;
+      dirLight.intensity = lampState ? 1.4 : 0.4;
+      lampSpotLight.visible = lampState;
+
+      if (lampState) {
+        document.body.classList.remove('dark-theme');
+      } else {
+        document.body.classList.add('dark-theme');
+      }
+    }
+
+    const loadingManager = new THREE.LoadingManager();
+    
+    loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+      const progress = Math.round((itemsLoaded / itemsTotal) * 100);
+      const percentEl = document.getElementById('loader-percent');
+      if (percentEl) percentEl.textContent = progress + '%';
+    };
+    
+    loadingManager.onLoad = function () {
+      const preloader = document.getElementById('preloader');
+      if (preloader) {
+        preloader.classList.add('fade-out');
+        setTimeout(() => preloader.remove(), 800);
+      }
+    };
+
+    const interactiveObjects = [];
+    const gltfLoader = new GLTFLoader(loadingManager);
+
+    // PERFECT BOTTOM-SURFACE SNAP & AUTO-SCALE HELPER
+    function setupLoadedModel(gltfScene, name, containerGroup, position, targetSize = 1.0) {
+      gltfScene.name = name;
+      
+      // 1. Calculate bounding box before scaling
+      let box = new THREE.Box3().setFromObject(gltfScene);
+      let size = box.getSize(new THREE.Vector3());
+
+      // 2. Auto-scale model
+      const maxDim = Math.max(size.x, size.y, size.z);
+      if (maxDim > 0 && targetSize > 0) {
+        const scale = targetSize / maxDim;
+        gltfScene.scale.set(scale, scale, scale);
+      }
+
+      // 3. Recalculate bounding box & SNAP BOTTOM TO Y=0
+      box = new THREE.Box3().setFromObject(gltfScene);
+      const center = box.getCenter(new THREE.Vector3());
+      
+      // Align bottom of model to container Y=0, and center X and Z
+      gltfScene.position.set(-center.x, -box.min.y, -center.z);
+
+      // 4. Set container world position
+      if (position) {
+        containerGroup.position.copy(position);
+      }
+
+      gltfScene.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          child.name = name;
+          interactiveObjects.push(child);
+        }
+      });
+
+      containerGroup.add(gltfScene);
+    }
+
+    // --- 1. PROCEDURAL DESK ---
+    // Desk top surface sits at Y = 0.80 (0.75 + 0.05)
+    const deskMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(2.3, 0.1, 1.3),
+      new THREE.MeshStandardMaterial({ color: 0x22170f, roughness: 0.4 })
+    );
+    deskMesh.position.set(0, 0.75, 0);
+    deskMesh.receiveShadow = true;
+    scene.add(deskMesh);
+
+    const DESK_SURFACE_Y = 0.80; // Top surface of desk
+
+    // (Turntable removed from here)
+
+    // --- 3. PROCEDURAL SHORTER FLOOR LAMP ---
+    const lampGroup = new THREE.Group();
+    lampGroup.name = 'lamp';
+
+    const lampBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.18, 0.025, 16),
+      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 })
+    );
+    lampBase.position.set(1.15, 0.0125, 0.3);
+    lampBase.castShadow = true;
+    lampGroup.add(lampBase);
+
+    const lampPole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.012, 0.012, 1.70, 12),
+      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 })
+    );
+    lampPole.position.set(1.15, 0.85, 0.3);
+    lampPole.castShadow = true;
+    lampGroup.add(lampPole);
+
+    const lampShadeMat = new THREE.MeshStandardMaterial({
+      color: 0x111111,
+      emissive: 0xffe0b2,
+      emissiveIntensity: 0.9
+    });
+    const lampShade = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.18, 0.12, 16, 1, true),
+      lampShadeMat
+    );
+    lampShade.position.set(1.15, 1.70, 0.3);
+    lampShade.rotation.x = Math.PI / 4;
+    lampShade.castShadow = true;
+    lampGroup.add(lampShade);
+
+    scene.add(lampGroup);
+    interactiveObjects.push(lampShade, lampBase);
+
+    // --- 4. TREE MODEL (Floor level Y = 0) ---
+    const plantGroup = new THREE.Group();
+    plantGroup.name = 'tree';
+    scene.add(plantGroup);
+    let treeWiggleTimer = 0;
+
+    gltfLoader.load(MODEL_PATHS.tree, (gltf) => {
+      setupLoadedModel(gltf.scene, 'tree', plantGroup, new THREE.Vector3(-1.1, 0.0, 0.2), 1.1);
+    }, undefined, () => {
+      const potMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.22, 0.16, 0.45, 16),
+        new THREE.MeshStandardMaterial({ color: 0x1f1f1f })
+      );
+      potMesh.position.set(-1.1, 0.225, 0.2);
+      potMesh.name = 'tree';
+      potMesh.castShadow = true;
+      plantGroup.add(potMesh);
+      interactiveObjects.push(potMesh);
+    });
+
+    // --- 5. CHAIR MODEL (Floor level Y = 0, Placed in front at Z = 0.95) ---
+    const chairGroup = new THREE.Group();
+    chairGroup.name = 'chair';
+    scene.add(chairGroup);
+    let chairTargetRotation = 0;
+
+    gltfLoader.load(MODEL_PATHS.chair, (gltf) => {
+      setupLoadedModel(gltf.scene, 'chair', chairGroup, new THREE.Vector3(0, 0.0, 0.95), 0.95);
+    }, undefined, () => {
+      const chairSeat = new THREE.Mesh(
+        new THREE.BoxGeometry(0.6, 0.12, 0.6),
+        new THREE.MeshStandardMaterial({ color: 0x181818 })
+      );
+      chairSeat.position.set(0, 0.45, 0.95);
+      chairSeat.name = 'chair';
+      chairGroup.add(chairSeat);
+      interactiveObjects.push(chairSeat);
+    });
+
+    // --- 6. MONITOR MODEL (Sitting on desk top Y = 0.80) ---
+    const monitorGroup = new THREE.Group();
+    monitorGroup.name = 'monitor';
+    scene.add(monitorGroup);
+
+    gltfLoader.load(MODEL_PATHS.monitor, (gltf) => {
+      setupLoadedModel(gltf.scene, 'monitor', monitorGroup, new THREE.Vector3(0, DESK_SURFACE_Y, -0.3), 0.85);
+    }, undefined, () => {
+      const monitorScreenMat = new THREE.MeshStandardMaterial({
+        map: crtTexture,
+        roughness: 0.2,
+        emissive: 0xffffff,
+        emissiveMap: crtTexture,
+        emissiveIntensity: 0.8
+      });
+      const monitorBody = new THREE.Mesh(
+        new THREE.BoxGeometry(0.85, 0.52, 0.06),
+        monitorScreenMat
+      );
+      monitorBody.position.set(0, 1.25, -0.3);
+      monitorBody.name = 'monitor';
+      monitorGroup.add(monitorBody);
+      interactiveObjects.push(monitorBody);
+    });
+
+    // --- 7. PENCIL MODEL & ANIMATION (Sitting on desk top Y = 0.80) ---
+    const pencilGroup = new THREE.Group();
+    pencilGroup.name = 'pencil';
+    const deskPencilPos = new THREE.Vector3(0.5, DESK_SURFACE_Y, 0.2);
+    const floorPencilPos = new THREE.Vector3(1.2, 0.01, 0.5);
+    
+    pencilGroup.position.copy(deskPencilPos);
+    pencilGroup.rotation.set(0, 0.3, 0);
+    scene.add(pencilGroup);
+
+    let pencilState = 0; 
+    let pencilAnimProgress = 0;
+
+    gltfLoader.load(MODEL_PATHS.pencil, (gltf) => {
+      setupLoadedModel(gltf.scene, 'pencil', pencilGroup, deskPencilPos, 0.22);
+    }, undefined, () => {
+      const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.015, 0.015, 0.25, 12),
+        new THREE.MeshStandardMaterial({ color: 0xfbc02d })
+      );
+      mesh.name = 'pencil';
+      mesh.rotation.z = Math.PI / 2;
+      pencilGroup.add(mesh);
+      interactiveObjects.push(mesh);
+    });
+
+    // --- 8. BOOK MODEL (Sitting on desk top Y = 0.80) ---
+    const bookGroup = new THREE.Group();
+    bookGroup.name = 'notebook';
+    scene.add(bookGroup);
+
+    let isBookOpen = false;
+    let targetBookAngle = 0;
+    const coverPivot = new THREE.Group();
+    coverPivot.position.set(-0.15, 0.01, 0);
+    bookGroup.add(coverPivot);
+
+    gltfLoader.load(MODEL_PATHS.book, (gltf) => {
+      setupLoadedModel(gltf.scene, 'notebook', bookGroup, new THREE.Vector3(0.15, DESK_SURFACE_Y, 0.15), 0.35);
+    }, undefined, () => {
+      const bookBase = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.02, 0.4),
+        new THREE.MeshStandardMaterial({ color: 0xf0f0f0 })
+      );
+      bookBase.position.set(0.15, DESK_SURFACE_Y, 0.15);
+      bookBase.name = 'notebook';
+      bookGroup.add(bookBase);
+
+      const bookCover = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.005, 0.4),
+        new THREE.MeshStandardMaterial({ color: 0x111111 })
+      );
+      bookCover.position.set(0.15, 0, 0);
+      bookCover.name = 'notebook';
+      coverPivot.add(bookCover);
+
+      interactiveObjects.push(bookBase, bookCover);
+    });
+
+    // --- 9. CUP MODEL (Sitting perfectly on desk top Y = 0.80) ---
+    const mugGroup = new THREE.Group();
+    mugGroup.name = 'mug';
+    scene.add(mugGroup);
+
+    gltfLoader.load(MODEL_PATHS.cup, (gltf) => {
+      setupLoadedModel(gltf.scene, 'mug', mugGroup, new THREE.Vector3(-0.25, DESK_SURFACE_Y, -0.1), 0.12);
+    }, undefined, () => {
+      const mugMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.06, 0.12, 16),
+        new THREE.MeshStandardMaterial({ color: 0xffffff })
+      );
+      mugMesh.position.set(-0.25, DESK_SURFACE_Y + 0.06, -0.1);
+      mugMesh.name = 'mug';
+      mugGroup.add(mugMesh);
+      interactiveObjects.push(mugMesh);
+    });
+
+    // --- Mouse & Raycasting ---
+    const mouse = new THREE.Vector2();
+    const normalizedMouse = new THREE.Vector2();
+    const raycaster = new THREE.Raycaster();
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      normalizedMouse.x = (e.clientX / window.innerWidth - 0.5) * 2;
+      normalizedMouse.y = (e.clientY / window.innerHeight - 0.5) * 2;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(interactiveObjects, true);
+      document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+    });
+
+    // --- Click Handler ---
+    window.addEventListener('click', () => {
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        let name = obj.name;
+
+        while (!name && obj.parent) {
+          obj = obj.parent;
+          name = obj.name;
+        }
+
+        if (name === 'lamp') {
+          isLampOn = !isLampOn;
+          applyTheme(isLampOn);
+          playSound('click');
+        }
+        else if (name === 'tree') {
+          treeWiggleTimer = 1.0;
+          playSound('rustle');
+        }
+        else if (name === 'monitor') {
+          tvPowerState = true;
+          tvPowerAnim = 0.01;
+          playSound('tvOn');
+          openOverlay('modal-work');
+        }
+        else if (name === 'pencil') {
+          if (pencilState === 0) {
+            pencilState = 1;
+            pencilAnimProgress = 0;
+            playSound('roll');
+          } else if (pencilState === 2) {
+            pencilState = 3;
+            pencilAnimProgress = 0;
+            playSound('flipBack');
+          }
+        }
+        else if (name === 'notebook') {
+          isBookOpen = !isBookOpen;
+          targetBookAngle = isBookOpen ? -Math.PI * 0.85 : 0;
+          playSound('pageFlip');
+          if (isBookOpen) setTimeout(() => openOverlay('modal-about'), 300);
+          else closeOverlay('modal-about');
+        }
+        else if (name === 'chair') {
+          chairTargetRotation += Math.PI * 0.5;
+          playSound('swivel');
+        }
+        else if (name === 'mug') {
+          playSound('rustle');
+          openOverlay('modal-contact');
+        }
+      }
+    });
+
+    // --- Overlay Control ---
+    window.openOverlay = function(id) {
+      document.getElementById(id).classList.add('active');
+    };
+
+    window.closeOverlay = function(id) {
+      document.getElementById(id).classList.remove('active');
+      
+      if (id === 'modal-about' && isBookOpen) {
+        isBookOpen = false;
+        targetBookAngle = 0;
+        playSound('pageFlip');
+      }
+
+      if (id === 'modal-work') {
+        tvPowerState = false;
+        tvPowerAnim = 0;
+        drawCRTScreen();
+        playSound('click');
+      }
+    };
+
+    // --- Animation Loop ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      // 1. Camera Parallax
+      const targetCamX = initialCamPos.x + normalizedMouse.x * 0.25;
+      const targetCamY = initialCamPos.y - normalizedMouse.y * 0.15;
+      camera.position.x += (targetCamX - camera.position.x) * 0.05;
+      camera.position.y += (targetCamY - camera.position.y) * 0.05;
+      camera.lookAt(0, 0.65, 0);
+
+      // 2. CRT Screen Animation
+      if (tvPowerState && tvPowerAnim < 1.0) {
+        tvPowerAnim += delta * 2.0;
+        if (tvPowerAnim > 1.0) tvPowerAnim = 1.0;
+        drawCRTScreen();
+      }
+
+      // 3. Tree Sway
+      if (treeWiggleTimer > 0) {
+        treeWiggleTimer -= delta * 2.5;
+        plantGroup.rotation.z = Math.sin(clock.getElapsedTime() * 25) * 0.06 * treeWiggleTimer;
+      } else {
+        plantGroup.rotation.z = 0;
+      }
+
+      // 5. Smooth Pencil Rolling & Flipping Animation
+      if (pencilState === 1) {
+        pencilAnimProgress += delta * 1.8;
+        if (pencilAnimProgress < 1.0) {
+          pencilGroup.position.lerpVectors(deskPencilPos, floorPencilPos, pencilAnimProgress);
+          pencilGroup.rotation.y += delta * 12.0;
+          pencilGroup.rotation.z = Math.sin(pencilAnimProgress * Math.PI) * 0.5;
+        } else {
+          pencilGroup.position.copy(floorPencilPos);
+          pencilState = 2;
+        }
+      } else if (pencilState === 3) {
+        pencilAnimProgress += delta * 2.2;
+        if (pencilAnimProgress < 1.0) {
+          pencilGroup.position.lerpVectors(floorPencilPos, deskPencilPos, pencilAnimProgress);
+          pencilGroup.position.y += Math.sin(pencilAnimProgress * Math.PI) * 0.6;
+          pencilGroup.rotation.y += delta * 8.0;
+        } else {
+          pencilGroup.position.copy(deskPencilPos);
+          pencilGroup.rotation.set(0, 0.3, 0);
+          pencilState = 0;
+        }
+      }
+
+      // 6. Notebook Cover Motion
+      coverPivot.rotation.z += (targetBookAngle - coverPivot.rotation.z) * 0.1;
+
+      // 7. Chair Swivel
+      chairGroup.rotation.y += (chairTargetRotation - chairGroup.rotation.y) * 0.1;
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>

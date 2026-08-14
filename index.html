@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Culinary Chef & Interactive 3D Workspace Studio</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #060609;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+      transition: background-color 0.6s ease;
+    }
+
+    /* Fullscreen High-Resolution Canvas */
+    #webgl-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: 1;
+      pointer-events: none; /* Allows mouse wheels to pass to scroll space */
+    }
+
+    /* Scroll Space for Multi-Frame Depth */
+    .scroll-space {
+      height: 700vh;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Preloader styling */
+    #preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #060609;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+    }
+    #preloader.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loader-content {
+      text-align: center;
+    }
+    .loader-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #00f0ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    .loader-text {
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: #ffffff;
+      letter-spacing: 0.05em;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Scroll prompts */
+    #scroll-prompt {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.7);
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    .mouse-icon {
+      width: 20px;
+      height: 32px;
+      border: 2px solid rgba(255, 255, 255, 0.7);
+      border-radius: 12px;
+      position: relative;
+    }
+    .mouse-icon .wheel {
+      width: 4px;
+      height: 8px;
+      background-color: #00f0ff;
+      border-radius: 2px;
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: scrollWheel 1.5s infinite;
+    }
+    @keyframes scrollWheel {
+      0% { opacity: 1; top: 6px; }
+      100% { opacity: 0; top: 18px; }
+    }
+
+    #interaction-hint {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(17, 17, 17, 0.7);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s ease, color 0.6s ease;
+      text-align: center;
+    }
+    body.dark-theme #interaction-hint {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Hero Branding Text */
+    .hero-text {
+      position: fixed;
+      bottom: 40px;
+      left: 40px;
+      z-index: 10;
+      pointer-events: none;
+      max-width: 440px;
+      transition: color 0.6s ease;
+      color: #111827;
+      opacity: 0;
+    }
+    .hero-text h1 {
+      font-size: 2.2rem;
+      font-weight: 400;
+      line-height: 1.2;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .hero-text p {
+      font-size: 0.95rem;
+      opacity: 0.75;
+    }
+
+    body.dark-theme .hero-text {
+      color: #ffffff;
+    }
+
+    /* Modals / Overlays */
+    .overlay-panel {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 50%;
+      height: 100%;
+      background: #f9f9f9;
+      color: #111;
+      z-index: 100;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.3);
+      transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 50px;
+      overflow-y: auto;
+    }
+    @media (max-width: 768px) {
+      .overlay-panel {
+        width: 100%;
+        padding: 30px;
+      }
+    }
+    .overlay-panel.active {
+      right: 0;
+    }
+    .close-btn {
+      position: absolute;
+      top: 25px;
+      right: 25px;
+      background: #111;
+      color: #fff;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content h2 {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+    }
+    .modal-content p {
+      line-height: 1.6;
+      color: #444;
+      margin-bottom: 15px;
+    }
+
+    .contact-form input, .contact-form textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .contact-form button {
+      padding: 12px 24px;
+      background: #111;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+
+  <!-- CDNs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+  <!-- Import maps polyfill -->
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Preloader HTML -->
+  <div id="preloader">
+    <div class="loader-content">
+      <div class="loader-spinner"></div>
+      <div class="loader-text">Assembling Studio... <span id="loader-percent">0%</span></div>
+    </div>
+  </div>
+
+  <!-- WebGL Canvas -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- Scroll space for timeline -->
+  <div class="scroll-space"></div>
+
+  <!-- UI overlays -->
+  <div id="scroll-prompt">
+    <div class="mouse-icon"><div class="wheel"></div></div>
+    <span>Scroll Down to Begin</span>
+  </div>
+
+
+
+  <!-- Modals -->
+  <div id="modal-about" class="overlay-panel">
+    <button class="close-btn" onclick="closeOverlay('modal-about')">&times;</button>
+    <div class="modal-content">
+      <h2>Building websites anchored by one memorable signature scene.</h2>
+      <p>Growon is an independent web studio handling the entire digital creation process—from design to custom visual content.</p>
+      <hr style="margin: 25px 0;" />
+      <h3>FAQ</h3>
+      <p><b>Q: What should we expect for a website budget?</b><br>A: Projects vary depending on complexity and 3D features.</p>
+      <p><b>Q: What is the turnaround time?</b><br>A: Typically 3 to 6 weeks.</p>
+    </div>
+  </div>
+
+  <div id="modal-work" class="overlay-panel">
+    <button class="close-btn" onclick="closeOverlay('modal-work')">&times;</button>
+    <div class="modal-content">
+      <h2>Selected Works</h2>
+      <p><b>01. DoYoon Kim Studio</b> — Concept Ceramic Showcase</p>
+      <p><b>02. Daam Space</b> — Interactive 3D Room Walkthrough</p>
+      <p><b>03. Blue Jazz Records</b> — 3D Vinyl Player Experience</p>
+    </div>
+  </div>
+
+  <div id="modal-contact" class="overlay-panel">
+    <button class="close-btn" onclick="closeOverlay('modal-contact')">&times;</button>
+    <div class="modal-content">
+      <h2>Contact Us</h2>
+      <form class="contact-form" onsubmit="event.preventDefault(); alert('Inquiry Sent!');">
+        <label>Name / Company</label>
+        <input type="text" placeholder="Your name or company" required />
+        <label>Email</label>
+        <input type="email" placeholder="you@company.com" required />
+        <label>Project Details</label>
+        <textarea rows="4" placeholder="Tell us about your project..."></textarea>
+        <button type="submit">Send Inquiry</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    // --- SETUP VARIABLES ---
+    let scrollProgress = 0;
+    let isLampOn = true;
+
+    // --- 1. THREE.JS SCENE SETUP ---
+    const canvas = document.querySelector('#webgl-canvas');
+    const scene = new THREE.Scene();
+    
+    // Background and Fog setup
+    const spaceBgColor = new THREE.Color(0x060609);
+    const lightBgColor = new THREE.Color(0xc0d4e1);
+    const darkBgColor = new THREE.Color(0x182833);
+    scene.background = spaceBgColor.clone();
+    
+    const darkFogColor = new THREE.Color(0x060609);
+    scene.fog = new THREE.FogExp2(0x060609, 0.02);
+
+    // Camera setup
+    const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 100);
+    const initialCamPos = new THREE.Vector3(0, 0.5, 8.0);
+    const finalCamPos = new THREE.Vector3(0.15, 2.5, 3.8);
+    camera.position.copy(initialCamPos);
+
+    const cameraTarget = new THREE.Vector3(0, 0, 0.5);
+    camera.lookAt(cameraTarget);
+
+    // Renderer setup
+    const renderer = new THREE.WebGLRenderer({
+      canvas: canvas,
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // --- 2. LIGHTING SETUP ---
+    // A. Space Stage Lights
+    const spaceAmbient = new THREE.AmbientLight(0xfff5ea, 0.9);
+    scene.add(spaceAmbient);
+
+    const spaceKey = new THREE.DirectionalLight(0xffffff, 2.2);
+    spaceKey.position.set(5, 8, 6);
+    scene.add(spaceKey);
+
+    const spaceFill = new THREE.DirectionalLight(0x88ccee, 0.8);
+    spaceFill.position.set(-5, -2, 2);
+    scene.add(spaceFill);
+
+    const spaceRim = new THREE.PointLight(0xffaa00, 2, 15);
+    spaceRim.position.set(0, 2, -2);
+    scene.add(spaceRim);
+
+    // B. Studio Desk Lights (Initially off, faded in later)
+    const studioAmbient = new THREE.AmbientLight(0xffffff, 0);
+    scene.add(studioAmbient);
+
+    const studioDirLight = new THREE.DirectionalLight(0xfff5ea, 0);
+    studioDirLight.position.set(3, 7, 4);
+    studioDirLight.castShadow = true;
+    studioDirLight.shadow.mapSize.width = 2048;
+    studioDirLight.shadow.mapSize.height = 2048;
+    scene.add(studioDirLight);
+
+    const lampSpotLight = new THREE.SpotLight(0xfff0dd, 0, 6, Math.PI / 3, 0.4);
+    lampSpotLight.position.set(1.15, 1.70, 0.3);
+    lampSpotLight.target.position.set(0.2, 0.75, 0.1);
+    lampSpotLight.castShadow = true;
+    scene.add(lampSpotLight);
+    scene.add(lampSpotLight.target);
+
+    // --- 3. AUDIO SYSTEM ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+
+      if (type === 'tvOn') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(); osc.stop(now + 0.3);
+      } else if (type === 'click') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.05);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+        osc.start(); osc.stop(now + 0.05);
+      } else if (type === 'rustle') {
+        const bufSize = audioCtx.sampleRate * 0.25;
+        const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buf;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 800;
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        noise.start();
+      } else if (type === 'pageFlip') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(350, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+        osc.start(); osc.stop(now + 0.15);
+      } else if (type === 'roll') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(140, now + 0.3);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(); osc.stop(now + 0.3);
+      } else if (type === 'flipBack') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(250, now);
+        osc.frequency.exponentialRampToValueAtTime(550, now + 0.3);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+        osc.start(); osc.stop(now + 0.3);
+      } else if (type === 'swivel') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.linearRampToValueAtTime(70, now + 0.35);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+        osc.start(); osc.stop(now + 0.35);
+      } else if (type === 'music') {
+        const notes = [261.63, 329.63, 392.00];
+        notes.forEach((freq, idx) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'sine';
+          o.frequency.value = freq;
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          g.gain.setValueAtTime(0.08, now + idx * 0.1);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 1.2 + idx * 0.1);
+          o.start(now + idx * 0.1);
+          o.stop(now + 1.2 + idx * 0.1);
+        });
+      } else if (type === 'landing') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+        osc.start(); osc.stop(now + 0.4);
+      } else if (type === 'chime') {
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'triangle';
+          o.frequency.setValueAtTime(freq, now + idx * 0.08);
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          g.gain.setValueAtTime(0.15, now + idx * 0.08);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.6 + idx * 0.08);
+          o.start(now + idx * 0.08);
+          o.stop(now + 0.6 + idx * 0.08);
+        });
+      }
+    }
+
+    // --- 4. GEOMETRIC TUNNEL FRAMES ---
+    // Frame 1: Torus Halo Ring
+    const haloGeo = new THREE.TorusGeometry(3.2, 0.05, 32, 100);
+    const haloMat = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.8 });
+    const haloRing = new THREE.Mesh(haloGeo, haloMat);
+    haloRing.position.set(0, 0, -2);
+    scene.add(haloRing);
+
+    // Frame 2: Cyber Box Grid Tunnel
+    const gridGroup = new THREE.Group();
+    for (let i = 0; i < 18; i++) {
+      const boxGeo = new THREE.BoxGeometry(7, 7, 1.2);
+      const wireframe = new THREE.WireframeGeometry(boxGeo);
+      const line = new THREE.LineSegments(wireframe);
+      line.material.color.setHex(0x00f0ff);
+      line.material.transparent = true;
+      line.material.opacity = 0;
+      line.position.z = -i * 4.5;
+      gridGroup.add(line);
+    }
+    scene.add(gridGroup);
+
+    // Frame 3: DNA Helix Spiral Tunnel
+    const helixGroup = new THREE.Group();
+    for (let i = 0; i < 28; i++) {
+      const angle = i * 0.4;
+      const radius = 2.8;
+      const ringGeo = new THREE.TorusGeometry(0.45, 0.04, 16, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: i % 2 === 0 ? 0x00ffcc : 0xff0088,
+        transparent: true,
+        opacity: 0
+      });
+      const ring1 = new THREE.Mesh(ringGeo, ringMat);
+      ring1.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, -i * 2.2);
+      const ring2 = new THREE.Mesh(ringGeo, ringMat.clone());
+      ring2.position.set(-Math.cos(angle) * radius, -Math.sin(angle) * radius, -i * 2.2);
+      helixGroup.add(ring1, ring2);
+    }
+    scene.add(helixGroup);
+
+    // Frame 4: Neon Arc Portal Tunnel
+    const arcGroup = new THREE.Group();
+    for (let i = 0; i < 16; i++) {
+      const arcGeo = new THREE.TorusGeometry(3.0 + (i * 0.1), 0.07, 16, 64, Math.PI * 1.5);
+      const arcMat = new THREE.MeshBasicMaterial({
+        color: i % 2 === 0 ? 0xb026ff : 0x00f0ff,
+        transparent: true,
+        opacity: 0
+      });
+      const arcMesh = new THREE.Mesh(arcGeo, arcMat);
+      arcMesh.position.z = -i * 3.2;
+      arcMesh.rotation.z = i * 0.35;
+      arcGroup.add(arcMesh);
+    }
+    scene.add(arcGroup);
+
+    // Frame 5: Glitch Particle Swarm
+    const particlesCount = 1000;
+    const pGeometry = new THREE.BufferGeometry();
+    const pPositions = new Float32Array(particlesCount * 3);
+    const pColors = new Float32Array(particlesCount * 3);
+    const palette = [new THREE.Color(0xff0055), new THREE.Color(0x00ffcc), new THREE.Color(0xffcc00)];
+    for (let i = 0; i < particlesCount * 3; i += 3) {
+      const angle = Math.random() * Math.PI * 2;
+      const r = 1 + Math.random() * 5;
+      pPositions[i] = Math.cos(angle) * r;
+      pPositions[i + 1] = Math.sin(angle) * r;
+      pPositions[i + 2] = (Math.random() - 0.5) * 35;
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      pColors[i] = c.r;
+      pColors[i + 1] = c.g;
+      pColors[i + 2] = c.b;
+    }
+    pGeometry.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+    pGeometry.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
+    const pMaterial = new THREE.PointsMaterial({
+      size: 0.1,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0
+    });
+    const glitchParticles = new THREE.Points(pGeometry, pMaterial);
+    scene.add(glitchParticles);
+
+    // Frame 6: Concentric Vortex Rings
+    const vortexGroup = new THREE.Group();
+    for (let i = 0; i < 14; i++) {
+      const vGeo = new THREE.TorusGeometry(2.4 + i * 0.18, 0.08, 16, 50);
+      const vMat = new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0xff00aa : 0x00f0ff, transparent: true, opacity: 0 });
+      const ring = new THREE.Mesh(vGeo, vMat);
+      ring.position.z = -i * 2.8;
+      ring.rotation.z = i * 0.25;
+      vortexGroup.add(ring);
+    }
+    scene.add(vortexGroup);
+
+
+    // --- 5. MODELS LOADING & PRELOADER SETUP ---
+    const interactiveObjects = [];
+    const loadingManager = new THREE.LoadingManager();
+    const gltfLoader = new GLTFLoader(loadingManager);
+
+    const MODEL_PATHS = {
+      chef: 'Chef Animation/character.glb',
+      tree: 'Desk/models/tree.glb',
+      chair: 'Desk/models/chair.glb',
+      pencil: 'Desk/models/pencil.glb',
+      book: 'Desk/models/book.glb',
+      monitor: 'Desk/models/monitor.glb',
+      cup: 'Desk/models/cup.glb'
+    };
+
+    loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+      const progress = Math.round((itemsLoaded / itemsTotal) * 100);
+      const percentEl = document.getElementById('loader-percent');
+      if (percentEl) percentEl.textContent = progress + '%';
+    };
+
+    loadingManager.onLoad = function () {
+      const preloader = document.getElementById('preloader');
+      if (preloader) {
+        preloader.classList.add('fade-out');
+        setTimeout(() => {
+          preloader.remove();
+          initScrollTimeline();
+        }, 800);
+      }
+    };
+
+    // Auto-scale and snap container logic
+    function setupLoadedModel(gltfScene, name, containerGroup, position, targetSize = 1.0, isClickable = true) {
+      gltfScene.name = name;
+      
+      // Calculate box and dimensions
+      let box = new THREE.Box3().setFromObject(gltfScene);
+      let size = box.getSize(new THREE.Vector3());
+
+      const maxDim = Math.max(size.x, size.y, size.z);
+      if (maxDim > 0 && targetSize > 0) {
+        const scale = targetSize / maxDim;
+        gltfScene.scale.set(scale, scale, scale);
+      }
+
+      // Snaps model bottom surface to container Y=0 and centers X/Z
+      box = new THREE.Box3().setFromObject(gltfScene);
+      const center = box.getCenter(new THREE.Vector3());
+      gltfScene.position.set(-center.x, -box.min.y, -center.z);
+
+      if (position) {
+        containerGroup.position.copy(position);
+      }
+
+      gltfScene.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          child.name = name;
+          if (isClickable) {
+            interactiveObjects.push(child);
+          }
+        }
+      });
+
+      containerGroup.add(gltfScene);
+    }
+
+    // A. Chef Groups Setup
+    // Hierarchy: scene -> chefGroup -> chefPivot -> characterModel
+    const chefGroup = new THREE.Group();
+    chefGroup.name = 'chef';
+    chefGroup.position.set(0, 0, 0.5); // Centered in viewport for space tumble
+    const chefPivot = new THREE.Group();
+    chefPivot.name = 'chefPivot';
+    chefGroup.add(chefPivot);
+    scene.add(chefGroup);
+
+    let chefModelInstance = null;
+    let chefInitialPos = new THREE.Vector3();
+    let chefModelHeight = 1.5;
+
+    gltfLoader.load(MODEL_PATHS.chef, (gltf) => {
+      const characterModel = gltf.scene;
+      chefModelInstance = characterModel;
+
+      // Center the chef model inside chefPivot (for tumbling)
+      const box = new THREE.Box3().setFromObject(characterModel);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+
+      characterModel.position.set(-center.x, -center.y, -center.z);
+      
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = chefModelHeight / maxDim;
+      characterModel.scale.set(scale, scale, scale);
+
+      characterModel.traverse((child) => {
+        // Check original name before renaming
+        const origName = child.name || '';
+        const lowerName = origName.toLowerCase();
+        
+        // Hide figurine stand parts (Circle.001 base, Plane.001 pole/rod, support planes)
+        if (lowerName.includes('circle.001') || lowerName.includes('plane.001') || lowerName.includes('plane.004') || lowerName.includes('plane.006')) {
+          child.visible = false;
+          return;
+        }
+
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          child.name = 'chef';
+          interactiveObjects.push(child);
+          if (child.material) {
+            child.material.roughness = 0.45;
+            child.material.metalness = 0.1;
+          }
+        }
+      });
+
+      chefPivot.add(characterModel);
+      chefInitialPos.copy(characterModel.position);
+    }, undefined, (err) => {
+      console.error("Chef model load error", err);
+      // Fallback chef cube
+      const geometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
+      const material = new THREE.MeshStandardMaterial({ color: 0xffa500 });
+      const cube = new THREE.Mesh(geometry, material);
+      cube.name = 'chef';
+      cube.castShadow = true;
+      interactiveObjects.push(cube);
+      chefPivot.add(cube);
+    });
+
+    // B. Desk Procedural Base
+    const deskMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(2.3, 0.1, 1.3),
+      new THREE.MeshStandardMaterial({ color: 0x22170f, roughness: 0.4 })
+    );
+    deskMesh.position.set(0, -8.0, 0); // Initially hidden deep below floor (target is 0.75)
+    deskMesh.receiveShadow = true;
+    scene.add(deskMesh);
+    const DESK_SURFACE_Y = 0.80; 
+
+    // C. Shorter Floor Lamp Group
+    const lampGroup = new THREE.Group();
+    lampGroup.name = 'lamp';
+    lampGroup.position.set(1.15, -9.0, 0.3); // Target Y is 0
+    scene.add(lampGroup);
+
+    const lampBase = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.18, 0.025, 16),
+      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 })
+    );
+    lampBase.position.set(0, 0.0125, 0);
+    lampBase.name = 'lamp';
+    lampBase.castShadow = true;
+    lampGroup.add(lampBase);
+
+    const lampPole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.012, 0.012, 1.70, 12),
+      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2 })
+    );
+    lampPole.position.set(0, 0.85, 0);
+    lampPole.name = 'lamp';
+    lampPole.castShadow = true;
+    lampGroup.add(lampPole);
+
+    const lampShadeMat = new THREE.MeshStandardMaterial({
+      color: 0x111111,
+      emissive: 0xffe0b2,
+      emissiveIntensity: 0.9
+    });
+    const lampShade = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.18, 0.12, 16, 1, true),
+      lampShadeMat
+    );
+    lampShade.position.set(0, 1.70, 0);
+    lampShade.rotation.x = Math.PI / 4;
+    lampShade.name = 'lamp';
+    lampShade.castShadow = true;
+    lampGroup.add(lampShade);
+    interactiveObjects.push(lampShade, lampBase);
+
+    // D. Tree Group
+    const plantGroup = new THREE.Group();
+    plantGroup.name = 'tree';
+    plantGroup.position.set(-1.1, -9.0, 0.2); // Target Y is 0
+    scene.add(plantGroup);
+    let treeWiggleTimer = 0;
+
+    gltfLoader.load(MODEL_PATHS.tree, (gltf) => {
+      setupLoadedModel(gltf.scene, 'tree', plantGroup, null, 1.1);
+    }, undefined, () => {
+      const potMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.22, 0.16, 0.45, 16),
+        new THREE.MeshStandardMaterial({ color: 0x1f1f1f })
+      );
+      potMesh.position.set(0, 0.225, 0);
+      potMesh.name = 'tree';
+      potMesh.castShadow = true;
+      plantGroup.add(potMesh);
+      interactiveObjects.push(potMesh);
+    });
+
+    // E. Chair Group
+    const chairGroup = new THREE.Group();
+    chairGroup.name = 'chair';
+    chairGroup.position.set(0, -9.0, 0.95); // Target Y is 0
+    scene.add(chairGroup);
+    let chairTargetRotation = 0;
+
+    gltfLoader.load(MODEL_PATHS.chair, (gltf) => {
+      setupLoadedModel(gltf.scene, 'chair', chairGroup, null, 0.95);
+    }, undefined, () => {
+      const chairSeat = new THREE.Mesh(
+        new THREE.BoxGeometry(0.6, 0.12, 0.6),
+        new THREE.MeshStandardMaterial({ color: 0x181818 })
+      );
+      chairSeat.position.set(0, 0.45, 0);
+      chairSeat.name = 'chair';
+      chairGroup.add(chairSeat);
+      interactiveObjects.push(chairSeat);
+    });
+
+    // F. Monitor Group
+    const monitorGroup = new THREE.Group();
+    monitorGroup.name = 'monitor';
+    monitorGroup.position.set(0, -8.0, -0.3); // Target Y is DESK_SURFACE_Y
+    scene.add(monitorGroup);
+
+    // CRT Screen Setup
+    const crtCanvas = document.createElement('canvas');
+    crtCanvas.width = 256;
+    crtCanvas.height = 160;
+    const crtCtx = crtCanvas.getContext('2d');
+    const crtTexture = new THREE.CanvasTexture(crtCanvas);
+    let tvPowerState = false;
+    let tvPowerAnim = 0;
+
+    function drawCRTScreen() {
+      crtCtx.fillStyle = '#050505';
+      crtCtx.fillRect(0, 0, crtCanvas.width, crtCanvas.height);
+      if (tvPowerState && tvPowerAnim > 0) {
+        if (tvPowerAnim < 0.4) {
+          const h = (1 - tvPowerAnim / 0.4) * crtCanvas.height;
+          crtCtx.fillStyle = '#ffffff';
+          crtCtx.fillRect(0, crtCanvas.height / 2 - h / 2, crtCanvas.width, h + 2);
+        } else {
+          const imgData = crtCtx.createImageData(crtCanvas.width, crtCanvas.height);
+          for (let i = 0; i < imgData.data.length; i += 4) {
+            const v = Math.random() * 255;
+            imgData.data[i] = v * 0.2;
+            imgData.data[i+1] = v * 0.9;
+            imgData.data[i+2] = v * 0.4;
+            imgData.data[i+3] = 255;
+          }
+          crtCtx.putImageData(imgData, 0, 0);
+          crtCtx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          for (let y = 0; y < crtCanvas.height; y += 4) {
+            crtCtx.fillRect(0, y, crtCanvas.width, 2);
+          }
+        }
+      }
+      crtTexture.needsUpdate = true;
+    }
+
+    gltfLoader.load(MODEL_PATHS.monitor, (gltf) => {
+      setupLoadedModel(gltf.scene, 'monitor', monitorGroup, null, 0.85);
+      // Try to find the screen mesh and apply CRT texture
+      gltf.scene.traverse((child) => {
+        if (child.isMesh && (child.name.toLowerCase().includes('screen') || child.name.toLowerCase().includes('display'))) {
+          child.material = new THREE.MeshStandardMaterial({
+            map: crtTexture,
+            roughness: 0.2,
+            emissive: 0xffffff,
+            emissiveMap: crtTexture,
+            emissiveIntensity: 0.8
+          });
+        }
+      });
+    }, undefined, () => {
+      const monitorScreenMat = new THREE.MeshStandardMaterial({
+        map: crtTexture,
+        roughness: 0.2,
+        emissive: 0xffffff,
+        emissiveMap: crtTexture,
+        emissiveIntensity: 0.8
+      });
+      const monitorBody = new THREE.Mesh(
+        new THREE.BoxGeometry(0.85, 0.52, 0.06),
+        monitorScreenMat
+      );
+      monitorBody.position.set(0, 0.45, 0);
+      monitorBody.name = 'monitor';
+      monitorGroup.add(monitorBody);
+      interactiveObjects.push(monitorBody);
+    });
+
+    // G. Pencil Group
+    const pencilGroup = new THREE.Group();
+    pencilGroup.name = 'pencil';
+    const deskPencilPos = new THREE.Vector3(0.5, DESK_SURFACE_Y, 0.2);
+    const floorPencilPos = new THREE.Vector3(1.2, 0.01, 0.5);
+    pencilGroup.position.set(0.5, -8.0, 0.2); // Target Y is DESK_SURFACE_Y
+    pencilGroup.rotation.set(0, 0.3, 0);
+    scene.add(pencilGroup);
+    let pencilState = 0; 
+    let pencilAnimProgress = 0;
+
+    gltfLoader.load(MODEL_PATHS.pencil, (gltf) => {
+      setupLoadedModel(gltf.scene, 'pencil', pencilGroup, null, 0.22);
+    }, undefined, () => {
+      const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.015, 0.015, 0.25, 12),
+        new THREE.MeshStandardMaterial({ color: 0xfbc02d })
+      );
+      mesh.name = 'pencil';
+      mesh.rotation.z = Math.PI / 2;
+      pencilGroup.add(mesh);
+      interactiveObjects.push(mesh);
+    });
+
+    // H. Notebook Group
+    const bookGroup = new THREE.Group();
+    bookGroup.name = 'notebook';
+    bookGroup.position.set(0.15, -8.0, 0.15); // Target Y is DESK_SURFACE_Y
+    scene.add(bookGroup);
+    let isBookOpen = false;
+    let targetBookAngle = 0;
+    const coverPivot = new THREE.Group();
+    coverPivot.position.set(-0.15, 0.01, 0);
+    bookGroup.add(coverPivot);
+
+    gltfLoader.load(MODEL_PATHS.book, (gltf) => {
+      setupLoadedModel(gltf.scene, 'notebook', bookGroup, null, 0.35);
+    }, undefined, () => {
+      const bookBase = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.02, 0.4),
+        new THREE.MeshStandardMaterial({ color: 0xf0f0f0 })
+      );
+      bookBase.position.set(0, 0.01, 0);
+      bookBase.name = 'notebook';
+      bookGroup.add(bookBase);
+
+      const bookCover = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, 0.005, 0.4),
+        new THREE.MeshStandardMaterial({ color: 0x111111 })
+      );
+      bookCover.position.set(0.15, 0, 0);
+      bookCover.name = 'notebook';
+      coverPivot.add(bookCover);
+      interactiveObjects.push(bookBase, bookCover);
+    });
+
+    // I. Mug Group
+    const mugGroup = new THREE.Group();
+    mugGroup.name = 'mug';
+    mugGroup.position.set(-0.25, -8.0, -0.1); // Target Y is DESK_SURFACE_Y
+    scene.add(mugGroup);
+
+    gltfLoader.load(MODEL_PATHS.cup, (gltf) => {
+      setupLoadedModel(gltf.scene, 'mug', mugGroup, null, 0.12);
+    }, undefined, () => {
+      const mugMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06, 0.06, 0.12, 16),
+        new THREE.MeshStandardMaterial({ color: 0xffffff })
+      );
+      mugMesh.position.set(0, 0.06, 0);
+      mugMesh.name = 'mug';
+      mugGroup.add(mugMesh);
+      interactiveObjects.push(mugMesh);
+    });
+
+
+    // --- 6. SCROLLTIMELINE & TRANSITIONS ---
+    function initScrollTimeline() {
+      const mainTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: ".scroll-space",
+          start: "top top",
+          end: "bottom bottom",
+          scrub: 1.5,
+          onUpdate: (self) => {
+            scrollProgress = self.progress;
+            
+            // Toggle element visibilities for rendering optimization
+            const spaceActive = scrollProgress < 0.85;
+            gridGroup.visible = spaceActive;
+            helixGroup.visible = spaceActive;
+            arcGroup.visible = spaceActive;
+            glitchParticles.visible = spaceActive;
+            vortexGroup.visible = spaceActive;
+
+            // Halo ring stays visible during space AND becomes the pedestal for landing
+            haloRing.visible = spaceActive || scrollProgress > 0.90;
+
+            // Dynamically adjust pointer events to allow scrolling when not at bottom,
+            // and click interactions when at bottom.
+            const scrollSpaceEl = document.querySelector('.scroll-space');
+            if (scrollProgress > 0.98) {
+              canvas.style.pointerEvents = 'auto';
+              if (scrollSpaceEl) scrollSpaceEl.style.pointerEvents = 'none';
+            } else {
+              canvas.style.pointerEvents = 'none';
+              if (scrollSpaceEl) scrollSpaceEl.style.pointerEvents = 'auto';
+            }
+          }
+        }
+      });
+
+      // --- STAGE 1: Space Tunnels & Tumbling (Progress 0% to 75%, Timeline 0 to 15) ---
+      
+      // Fade out scroll prompt at very beginning
+      mainTl.to("#scroll-prompt", { opacity: 0, duration: 1 }, 0);
+
+      // Chef Space tumbling and falling movement
+      mainTl
+      .to(chefPivot.position, { y: -0.2, z: 0.8, duration: 2.5, ease: "power1.inOut" }, 0)
+      .to(chefPivot.rotation, { x: Math.PI * 0.2, y: Math.PI * 0.4, z: 0, duration: 2.5, ease: "power1.inOut" }, 0)
+      
+      // Halo ring zooms out / fades
+      .to(haloRing.material, { opacity: 0, duration: 1 }, 0.5)
+
+      // Cyber Grid tunnel
+      .to(gridGroup.children.map(c => c.material), { opacity: 0.8, duration: 1.5 }, 1.0)
+      .to(gridGroup.position, { z: 30, duration: 3.5 }, 1.0)
+      .to(gridGroup.children.map(c => c.material), { opacity: 0, duration: 1.0 }, 3.5)
+
+      // DNA Helix spiral tunnel
+      .to(helixGroup.children.map(r => r.material), { opacity: 0.9, duration: 1.0 }, 3.5)
+      .to(helixGroup.position, { z: 35, duration: 4.0 }, 3.5)
+      .to(helixGroup.rotation, { z: Math.PI * 3, duration: 4.0 }, 3.5)
+      .to(chefPivot.rotation, { x: Math.PI * 0.3, y: Math.PI * 1.2, z: Math.PI * 0.1, duration: 3.5, ease: "sine.inOut" }, 3.5)
+      .to(helixGroup.children.map(r => r.material), { opacity: 0, duration: 1.0 }, 6.5)
+
+      // Sleek Neon Arc Portal
+      .to(arcGroup.children.map(a => a.material), { opacity: 0.85, duration: 1.0 }, 6.5)
+      .to(arcGroup.position, { z: 28, duration: 3.5 }, 6.5)
+      .to(arcGroup.rotation, { z: -Math.PI * 2, duration: 3.5 }, 6.5)
+      .to(chefPivot.rotation, { x: Math.PI * 0.15, y: Math.PI * 1.8, z: 0, duration: 3.5, ease: "sine.inOut" }, 6.5)
+      .to(arcGroup.children.map(a => a.material), { opacity: 0, duration: 1.0 }, 9.5)
+
+      // Particle Swarm Storm
+      .to(glitchParticles.material, { opacity: 1, duration: 1.0 }, 9.5)
+      .to(glitchParticles.rotation, { z: Math.PI * 2, duration: 3.5 }, 9.5)
+      .to(chefPivot.rotation, { x: Math.PI * 0.25, y: Math.PI * 2.4, z: Math.PI * 0.05, duration: 3.5, ease: "sine.inOut" }, 9.5)
+      .to(glitchParticles.material, { opacity: 0, duration: 1.0 }, 12.5)
+
+      // Vortex Rings
+      .to(vortexGroup.children.map(r => r.material), { opacity: 0.85, duration: 1.0 }, 12.5)
+      .to(vortexGroup.position, { z: 25, duration: 3.5 }, 12.5)
+      .to(vortexGroup.rotation, { z: Math.PI * 2.5, duration: 3.5 }, 12.5)
+      .to(vortexGroup.children.map(r => r.material), { opacity: 0, duration: 1.5 }, 15.0);
+
+      // --- STAGE 2: Room Assembly & Camera Sweep (Progress 70% to 90%, Timeline 14.5 to 19) ---
+      mainTl
+      // Camera transition
+      .to(camera.position, { x: finalCamPos.x, y: finalCamPos.y, z: finalCamPos.z, duration: 4.5, ease: "power2.inOut" }, 14.5)
+      .to(cameraTarget, { x: 0, y: 0.65, z: 0, duration: 4.5, ease: "power2.inOut" }, 14.5)
+
+      // Staggered Room Assembly (rise from floor with slight bounce)
+      .to(deskMesh.position, { y: 0.75, duration: 2.2, ease: "back.out(1.1)" }, 15.0)
+      .to(lampGroup.position, { y: 0, duration: 2.2, ease: "back.out(1.1)" }, 15.2)
+      .to(plantGroup.position, { y: 0, duration: 2.2, ease: "back.out(1.1)" }, 15.4)
+      .to(chairGroup.position, { y: 0, duration: 2.2, ease: "back.out(1.1)" }, 15.5)
+      .to(chairGroup.rotation, { y: Math.PI * 2, duration: 2.2, ease: "power1.out" }, 15.5)
+      .to(monitorGroup.position, { y: DESK_SURFACE_Y, duration: 2.0, ease: "back.out(1.1)" }, 15.7)
+      .to(bookGroup.position, { y: DESK_SURFACE_Y, duration: 2.0, ease: "back.out(1.1)" }, 15.8)
+      .to(mugGroup.position, { y: DESK_SURFACE_Y, duration: 2.0, ease: "back.out(1.1)" }, 15.9)
+      .to(pencilGroup.position, { y: DESK_SURFACE_Y, duration: 2.0, ease: "back.out(1.1)" }, 16.0)
+
+      // --- STAGE 3: Chef Landing & Pedestal (Progress 85% to 100%, Timeline 15 to 21) ---
+      
+      // Move chefGroup to a high point above the landing spot during camera sweep
+      .to(chefGroup.position, { x: -0.45, z: 1.2, y: 3.5, duration: 1.5, ease: "power1.out" }, 15.0)
+
+      // Align chefPivot upright and face the camera/user (Y = Math.PI * 0.35)
+      .to(chefPivot.position, { x: 0, y: 0, z: 0, duration: 1.5, ease: "power1.inOut" }, 15.0)
+      .to(chefPivot.rotation, { x: 0, y: Math.PI * 0.35, z: 0, duration: 1.5, ease: "power1.inOut" }, 15.0)
+
+      // Halo ring converts to landing pedestal flat on the floor under the chef's feet
+      .to(haloRing.position, { x: -0.45, y: 0.015, z: 1.2, duration: 2.0 }, 15.5)
+      .to(haloRing.rotation, { x: Math.PI / 2, z: 0, duration: 2.0 }, 15.5)
+      .to(haloRing.scale, { x: 0.15, y: 0.15, z: 0.15, duration: 2.0 }, 15.5) // small glowing ring around chef feet
+      .to(haloRing.material, { opacity: 0.9, duration: 1.5 }, 16.0)
+
+      // Drop chefGroup down to landing Y = 0.30 (so feet touch the floor Y=0)
+      .to(chefGroup.position, { y: 0.30, duration: 1.5, ease: "power2.in" }, 16.5)
+
+      // Sound trigger for landing (happens when scroll hits the ground)
+      .call(() => {
+        playSound('landing');
+      }, null, 18.0)
+
+      // Juicy Landing Bounce: Squash & Stretch
+      .to(chefGroup.position, { y: 0.17, duration: 0.25, ease: "sine.out" }, 18.0) // squash down
+      .to(chefGroup.scale, { x: 1.2, y: 0.8, z: 1.2, duration: 0.25, ease: "sine.out" }, 18.0)
+      
+      .to(chefGroup.position, { y: 0.37, duration: 0.3, ease: "sine.inOut" }, 18.25) // bounce up
+      .to(chefGroup.scale, { x: 0.95, y: 1.1, z: 0.95, duration: 0.3, ease: "sine.inOut" }, 18.25)
+      
+      .to(chefGroup.position, { y: 0.30, duration: 0.25, ease: "sine.in" }, 18.55) // settle down
+      .to(chefGroup.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.25, ease: "sine.in" }, 18.55);
+    }
+
+
+    // --- 7. MOUSE TRACKING & PARALLAX ---
+    const mouse = new THREE.Vector2();
+    const normalizedMouse = new THREE.Vector2();
+    const raycaster = new THREE.Raycaster();
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      normalizedMouse.x = (e.clientX / window.innerWidth - 0.5) * 2;
+      normalizedMouse.y = (e.clientY / window.innerHeight - 0.5) * 2;
+
+      // Only perform raycasting for pointers if fully loaded and scrolled to bottom
+      if (scrollProgress > 0.98) {
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(interactiveObjects, true);
+        document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+      }
+    });
+
+    // --- 8. CLICK INTERACTION HANDLER ---
+    let isChefAnimating = false;
+
+    window.addEventListener('click', () => {
+      // Interactions are ONLY active when scrolled fully to the bottom
+      if (scrollProgress < 0.98) return;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(interactiveObjects, true);
+
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        let name = obj.name;
+
+        // Traverse up to find correct interaction name
+        while (!name && obj.parent) {
+          obj = obj.parent;
+          name = obj.name;
+        }
+
+        if (name === 'lamp') {
+          isLampOn = !isLampOn;
+          playSound('click');
+          applyTheme(isLampOn);
+        }
+        else if (name === 'tree') {
+          treeWiggleTimer = 1.0;
+          playSound('rustle');
+        }
+        else if (name === 'monitor') {
+          tvPowerState = true;
+          tvPowerAnim = 0.01;
+          playSound('tvOn');
+          openOverlay('modal-work');
+        }
+        else if (name === 'pencil') {
+          if (pencilState === 0) {
+            pencilState = 1;
+            pencilAnimProgress = 0;
+            playSound('roll');
+          } else if (pencilState === 2) {
+            pencilState = 3;
+            pencilAnimProgress = 0;
+            playSound('flipBack');
+          }
+        }
+        else if (name === 'notebook') {
+          isBookOpen = !isBookOpen;
+          targetBookAngle = isBookOpen ? -Math.PI * 0.85 : 0;
+          playSound('pageFlip');
+          if (isBookOpen) {
+            setTimeout(() => openOverlay('modal-about'), 300);
+          } else {
+            closeOverlay('modal-about');
+          }
+        }
+        else if (name === 'chair') {
+          chairTargetRotation += Math.PI * 0.5;
+          playSound('swivel');
+        }
+        else if (name === 'mug') {
+          playSound('rustle');
+          openOverlay('modal-contact');
+        }
+        else if (name === 'chef') {
+          // Trigger cute chef reaction
+          triggerChefJump();
+        }
+      }
+    });
+
+    // Chef Custom Reaction Animation (Jump + Spin + Chime)
+    function triggerChefJump() {
+      if (isChefAnimating) return;
+      isChefAnimating = true;
+      playSound('chime');
+
+      const jumpTl = gsap.timeline({
+        onComplete: () => {
+          isChefAnimating = false;
+        }
+      });
+
+      // Jump and spin animation with elastic squash & stretch landing
+      jumpTl
+        // Jump start squash
+        .to(chefGroup.scale, { x: 1.15, y: 0.8, z: 1.15, duration: 0.15, ease: "power1.out" })
+        .to(chefGroup.position, { y: 0.20, duration: 0.15, ease: "power1.out" }, 0)
+        
+        // Rise and spin
+        .to(chefGroup.position, { y: 1.35, duration: 0.45, ease: "power2.out" })
+        .to(chefGroup.scale, { x: 0.9, y: 1.15, z: 0.9, duration: 0.45, ease: "power2.out" }, "<")
+        .to(chefPivot.rotation, { y: chefPivot.rotation.y + Math.PI * 2, duration: 0.6, ease: "power1.inOut" }, "<")
+
+        // Drop
+        .to(chefGroup.position, { y: 0.30, duration: 0.35, ease: "power2.in" })
+        .to(chefGroup.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.35, ease: "power2.in" }, "<")
+
+        // Impact squash
+        .to(chefGroup.position, { y: 0.17, duration: 0.15, ease: "sine.out" })
+        .to(chefGroup.scale, { x: 1.2, y: 0.8, z: 1.2, duration: 0.15, ease: "sine.out" }, "<")
+        .call(() => playSound('landing'), null, "<")
+
+        // Settle
+        .to(chefGroup.position, { y: 0.30, duration: 0.2, ease: "sine.in" })
+        .to(chefGroup.scale, { x: 1.0, y: 1.0, z: 1.0, duration: 0.2, ease: "sine.in" }, "<");
+    }
+
+    // Apply dark/light theme parameters
+    function applyTheme(lampState) {
+      if (lampState) {
+        document.body.classList.remove('dark-theme');
+      } else {
+        document.body.classList.add('dark-theme');
+      }
+    }
+
+    // Modal helpers
+    window.openOverlay = function(id) {
+      document.getElementById(id).classList.add('active');
+    };
+
+    window.closeOverlay = function(id) {
+      document.getElementById(id).classList.remove('active');
+      
+      if (id === 'modal-about' && isBookOpen) {
+        isBookOpen = false;
+        targetBookAngle = 0;
+        playSound('pageFlip');
+      }
+      if (id === 'modal-work') {
+        tvPowerState = false;
+        tvPowerAnim = 0;
+        drawCRTScreen();
+        playSound('click');
+      }
+    };
+
+    // --- 9. RENDER & ANIMATION LOOP ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const elapsedTime = clock.getElapsedTime();
+
+      // Halo ring and spiral spins slowly in background
+      haloRing.rotation.z += 0.003;
+      helixGroup.rotation.z += 0.002;
+
+      // 1. Camera Parallax (Only when user is fully scrolled to the bottom)
+      if (scrollProgress > 0.98) {
+        const targetCamX = finalCamPos.x + normalizedMouse.x * 0.25;
+        const targetCamY = finalCamPos.y - normalizedMouse.y * 0.15;
+        camera.position.x += (targetCamX - camera.position.x) * 0.05;
+        camera.position.y += (targetCamY - camera.position.y) * 0.05;
+        camera.lookAt(0, 0.65, 0);
+      } else {
+        camera.lookAt(cameraTarget);
+      }
+
+      // 2. Dynamic Lighting & Fog Color Transitions (Calculated in animate loop for robustness)
+      const currentBg = isLampOn ? lightBgColor : darkBgColor;
+      if (scrollProgress < 0.65) {
+        // Space state
+        scene.background.copy(spaceBgColor);
+        if (scene.fog) {
+          scene.fog.color.copy(spaceBgColor);
+          scene.fog.density = 0.02;
+        }
+
+        spaceAmbient.intensity = 0.9;
+        spaceKey.intensity = 2.2;
+        spaceFill.intensity = 0.8;
+        spaceRim.intensity = 2.0;
+
+        studioAmbient.intensity = 0;
+        studioDirLight.intensity = 0;
+        lampSpotLight.intensity = 0;
+      } else if (scrollProgress < 0.90) {
+        // Interpolating transition
+        const t = (scrollProgress - 0.65) / 0.25; // 0 to 1
+
+        scene.background.lerpColors(spaceBgColor, currentBg, t);
+        if (scene.fog) {
+          scene.fog.color.lerpColors(spaceBgColor, currentBg, t);
+          scene.fog.density = THREE.MathUtils.lerp(0.02, 0.0, t);
+        }
+
+        // Fade space lights out
+        spaceAmbient.intensity = 0.9 * (1 - t);
+        spaceKey.intensity = 2.2 * (1 - t);
+        spaceFill.intensity = 0.8 * (1 - t);
+        spaceRim.intensity = 2.0 * (1 - t);
+
+        // Fade studio lights in
+        const targetAmbient = isLampOn ? 1.0 : 0.3;
+        const targetDir = isLampOn ? 1.4 : 0.4;
+        const targetSpot = isLampOn ? 4.5 : 0;
+
+        studioAmbient.intensity = targetAmbient * t;
+        studioDirLight.intensity = targetDir * t;
+        lampSpotLight.intensity = targetSpot * t;
+      } else {
+        // Studio state
+        scene.background.copy(currentBg);
+        if (scene.fog) {
+          scene.fog.density = 0;
+        }
+
+        spaceAmbient.intensity = 0;
+        spaceKey.intensity = 0;
+        spaceFill.intensity = 0;
+        spaceRim.intensity = 0;
+
+        studioAmbient.intensity = isLampOn ? 1.0 : 0.3;
+        studioDirLight.intensity = isLampOn ? 1.4 : 0.4;
+        lampSpotLight.intensity = isLampOn ? 4.5 : 0;
+      }
+
+      // 3. CRT Screen Animation
+      if (tvPowerState && tvPowerAnim < 1.0) {
+        tvPowerAnim += delta * 2.0;
+        if (tvPowerAnim > 1.0) tvPowerAnim = 1.0;
+        drawCRTScreen();
+      }
+
+      // 4. Tree Sway
+      if (treeWiggleTimer > 0) {
+        treeWiggleTimer -= delta * 2.5;
+        plantGroup.rotation.z = Math.sin(elapsedTime * 25) * 0.06 * treeWiggleTimer;
+      } else {
+        plantGroup.rotation.z = 0;
+      }
+
+      // 5. Smooth Pencil Rolling & Flipping Animation
+      if (pencilState === 1) {
+        pencilAnimProgress += delta * 1.8;
+        if (pencilAnimProgress < 1.0) {
+          pencilGroup.position.lerpVectors(deskPencilPos, floorPencilPos, pencilAnimProgress);
+          pencilGroup.rotation.y += delta * 12.0;
+          pencilGroup.rotation.z = Math.sin(pencilAnimProgress * Math.PI) * 0.5;
+        } else {
+          pencilGroup.position.copy(floorPencilPos);
+          pencilState = 2;
+        }
+      } else if (pencilState === 3) {
+        pencilAnimProgress += delta * 2.2;
+        if (pencilAnimProgress < 1.0) {
+          pencilGroup.position.lerpVectors(floorPencilPos, deskPencilPos, pencilAnimProgress);
+          pencilGroup.position.y += Math.sin(pencilAnimProgress * Math.PI) * 0.6;
+          pencilGroup.rotation.y += delta * 8.0;
+        } else {
+          pencilGroup.position.copy(deskPencilPos);
+          pencilGroup.rotation.set(0, 0.3, 0);
+          pencilState = 0;
+        }
+      }
+
+      // 6. Notebook Cover Motion
+      coverPivot.rotation.z += (targetBookAngle - coverPivot.rotation.z) * 0.1;
+
+      // 7. Chair Swivel
+      chairGroup.rotation.y += (chairTargetRotation - chairGroup.rotation.y) * 0.1;
+
+      // 8. Chef Idle Sway (Breathing motion when scrolled to bottom and not jumping)
+      if (chefModelInstance && scrollProgress > 0.98 && !isChefAnimating) {
+        const swayX = chefInitialPos.x + Math.sin(elapsedTime * 2.0) * 0.03;
+        const swayY = chefInitialPos.y + Math.cos(elapsedTime * 1.5) * 0.02;
+        chefModelInstance.position.x = THREE.MathUtils.lerp(chefModelInstance.position.x, swayX, 0.05);
+        chefModelInstance.position.y = THREE.MathUtils.lerp(chefModelInstance.position.y, swayY, 0.05);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // High Resolution Resize Handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
