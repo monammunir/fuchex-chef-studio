@@ -15,7 +15,7 @@
 
     body, html {
       width: 100%;
-      height: 100%;
+      min-height: 100vh;
       background-color: #060609;
       color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -33,6 +33,7 @@
       display: block;
       z-index: 1;
       pointer-events: none; /* Allows mouse wheels to pass to scroll space */
+      touch-action: pan-y; /* Allows touch dragging to scroll the page on mobile */
     }
 
     /* Scroll Space for Multi-Frame Depth */
