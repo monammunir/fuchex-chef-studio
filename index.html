@@ -238,6 +238,314 @@
       cursor: pointer;
       border-radius: 4px;
     }
+
+    /* ===================== PASSPORT MODULE ===================== */
+    #passport-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 12, 20, 0);
+      pointer-events: none;
+      transition: background 0.5s ease;
+      font-family: 'Georgia', 'Times New Roman', serif;
+    }
+    #passport-overlay.active {
+      background: rgba(8, 12, 20, 0.55);
+      pointer-events: auto;
+    }
+    .passport-book {
+      position: relative;
+      width: min(880px, 92vw);
+      height: min(560px, 84vh);
+      background: #f5f0e6;
+      border-radius: 6px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+      opacity: 0;
+      transform: translateY(30px) scale(0.94);
+      transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      perspective: 1800px;
+    }
+    #passport-overlay.active .passport-book {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    .passport-book-header {
+      background: linear-gradient(135deg, #1a2f57, #0d1b34);
+      color: #d8c17a;
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    .passport-book-header .passport-emblem {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .passport-book-header .passport-emblem span.icon {
+      font-size: 1.3rem;
+    }
+    .passport-close-btn {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(216,193,122,0.5);
+      color: #d8c17a;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+    }
+    .passport-close-btn:hover {
+      background: rgba(216,193,122,0.25);
+    }
+    .passport-tabs {
+      display: flex;
+      background: #e7ddc4;
+      border-bottom: 2px solid #c8b88a;
+      flex-shrink: 0;
+      overflow-x: auto;
+    }
+    .passport-tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px 8px;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: #5a4f33;
+      border-right: 1px solid #c8b88a;
+      transition: background 0.2s ease, color 0.2s ease;
+      white-space: nowrap;
+    }
+    .passport-tab:last-child { border-right: none; }
+    .passport-tab.active {
+      background: #f5f0e6;
+      color: #1a2f57;
+      font-weight: bold;
+    }
+    .passport-pages {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      background: #f5f0e6 repeating-linear-gradient(
+        0deg, rgba(0,0,0,0.015) 0px, rgba(0,0,0,0.015) 1px, transparent 1px, transparent 3px
+      );
+    }
+    .passport-page {
+      position: absolute;
+      inset: 0;
+      padding: 26px 34px;
+      overflow-y: auto;
+      transform-origin: left center;
+      transform: rotateY(-110deg);
+      opacity: 0;
+      backface-visibility: hidden;
+      transition: transform 0.65s cubic-bezier(0.5, 0, 0.2, 1), opacity 0.45s ease;
+      pointer-events: none;
+    }
+    .passport-page.active {
+      transform: rotateY(0deg);
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 2;
+    }
+    .passport-page.prev {
+      transform: rotateY(110deg);
+    }
+    .passport-page-title {
+      font-size: 1.3rem;
+      color: #1a2f57;
+      letter-spacing: 0.03em;
+      margin-bottom: 4px;
+      border-bottom: 2px solid #c8b88a;
+      padding-bottom: 10px;
+    }
+    .passport-page-sub {
+      font-size: 0.78rem;
+      color: #8a7c53;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Profile page */
+    .profile-layout {
+      display: flex;
+      gap: 24px;
+    }
+    .profile-photo {
+      width: 108px;
+      height: 128px;
+      flex-shrink: 0;
+      border: 2px solid #1a2f57;
+      background: linear-gradient(160deg, #2c4a82, #1a2f57);
+      color: #f5f0e6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      font-weight: bold;
+    }
+    .profile-fields {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 24px;
+      font-size: 0.85rem;
+    }
+    .profile-field label {
+      display: block;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8a7c53;
+      margin-bottom: 2px;
+    }
+    .profile-field div.val {
+      color: #232323;
+      font-weight: 600;
+    }
+
+    /* Completion page */
+    .module-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px dashed #c8b88a;
+    }
+    .module-row .module-name { flex: 1; font-size: 0.85rem; color: #232323; }
+    .module-bar-track {
+      width: 140px;
+      height: 8px;
+      background: #ded2ab;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .module-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #1a2f57, #3a5ea8);
+      border-radius: 4px;
+    }
+    .module-pct { width: 40px; text-align: right; font-size: 0.75rem; color: #5a4f33; }
+
+    /* Quiz results page */
+    .quiz-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 6px;
+      border-bottom: 1px dashed #c8b88a;
+    }
+    .quiz-name { flex: 1; font-size: 0.85rem; color: #232323; }
+    .quiz-date { font-size: 0.72rem; color: #8a7c53; width: 90px; }
+    .quiz-score { font-size: 0.8rem; font-weight: bold; width: 60px; text-align: right; }
+    .visa-stamp {
+      position: absolute;
+      right: 60px;
+      border: 2px solid #a4302c;
+      color: #a4302c;
+      border-radius: 50%;
+      width: 46px;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.55rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      text-align: center;
+      transform: rotate(-14deg);
+      opacity: 0.85;
+      line-height: 1.1;
+    }
+
+    /* Achievements page */
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .achievement-card {
+      border: 1px solid #c8b88a;
+      background: rgba(255,255,255,0.4);
+      border-radius: 6px;
+      padding: 12px;
+      text-align: center;
+    }
+    .achievement-card .ach-icon { font-size: 1.6rem; margin-bottom: 6px; }
+    .achievement-card .ach-title { font-size: 0.75rem; font-weight: bold; color: #1a2f57; }
+    .achievement-card .ach-desc { font-size: 0.65rem; color: #6b6047; margin-top: 3px; }
+    .achievement-summary-row {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+    .achievement-stat {
+      flex: 1;
+      text-align: center;
+      background: rgba(26,47,87,0.06);
+      border-radius: 6px;
+      padding: 10px;
+    }
+    .achievement-stat .stat-num { font-size: 1.4rem; color: #1a2f57; font-weight: bold; }
+    .achievement-stat .stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #8a7c53; }
+
+    .passport-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 22px;
+      background: #e7ddc4;
+      border-top: 2px solid #c8b88a;
+      flex-shrink: 0;
+    }
+    .passport-nav-btn {
+      background: #1a2f57;
+      color: #f5f0e6;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .passport-nav-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+    .passport-dots {
+      display: flex;
+      gap: 8px;
+    }
+    .passport-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #c8b88a;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .passport-dot.active {
+      background: #1a2f57;
+    }
   </style>
 
   <!-- CDNs -->
@@ -279,6 +587,28 @@
   </div>
 
 
+
+  <!-- Passport Module Overlay -->
+  <div id="passport-overlay">
+    <div class="passport-book">
+      <div class="passport-book-header">
+        <div class="passport-emblem"><span class="icon">🎓</span><span>Student Passport</span></div>
+        <button class="passport-close-btn" id="passportCloseBtn">&times;</button>
+      </div>
+      <div class="passport-tabs" id="passportTabs">
+        <div class="passport-tab" data-page="0">Profile</div>
+        <div class="passport-tab" data-page="1">Modules</div>
+        <div class="passport-tab" data-page="2">Quiz Results</div>
+        <div class="passport-tab" data-page="3">Achievements</div>
+      </div>
+      <div class="passport-pages" id="passportPages"></div>
+      <div class="passport-nav">
+        <button class="passport-nav-btn" id="passportPrevBtn">&larr; Prev</button>
+        <div class="passport-dots" id="passportDots"></div>
+        <button class="passport-nav-btn" id="passportNextBtn">Next &rarr;</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Modals -->
   <div id="modal-about" class="overlay-panel">
@@ -355,10 +685,71 @@
       : new THREE.Vector3(0.15, 2.5, 3.8);
     camera.position.copy(initialCamPos);
 
-    const cameraTarget = isMobile 
+    const DESK_LOOK_AT = isMobile 
       ? new THREE.Vector3(0, 0.85, 0.5) 
       : new THREE.Vector3(0, 0.65, 0.5);
+    const cameraTarget = DESK_LOOK_AT.clone();
     camera.lookAt(cameraTarget);
+
+    // --- Generic Camera Focus / Zoom System ---
+    const CAMERA_FOCUS = {
+      monitor: { 
+        pos: isMobile ? new THREE.Vector3(0.05, 1.8, 1.8) : new THREE.Vector3(0.05, 1.32, 0.55),  
+        look: isMobile ? new THREE.Vector3(0, 1.4, -0.3) : new THREE.Vector3(0, 1.22, -0.3) 
+      },
+      notebook: { 
+        pos: isMobile ? new THREE.Vector3(0.15, 1.6, 2.0) : new THREE.Vector3(0.15, 1.05, 0.75),  
+        look: isMobile ? new THREE.Vector3(0.15, 0.95, 0.1) : new THREE.Vector3(0.15, 0.85, 0.1) 
+      },
+      mug: { 
+        pos: isMobile ? new THREE.Vector3(-0.25, 1.5, 1.75) : new THREE.Vector3(-0.25, 1.0, 0.45),  
+        look: isMobile ? new THREE.Vector3(-0.25, 0.96, -0.1) : new THREE.Vector3(-0.25, 0.86, -0.1) 
+      },
+      passport: { 
+        pos: isMobile ? new THREE.Vector3(0.85, 1.62, 1.85) : new THREE.Vector3(0.85, 1.12, 0.55),  
+        look: isMobile ? new THREE.Vector3(0.85, 0.95, -0.15) : new THREE.Vector3(0.85, 0.85, -0.15) 
+      },
+      passportOpen: { 
+        pos: isMobile ? new THREE.Vector3(0.85, 1.72, 1.5) : new THREE.Vector3(0.85, 1.22, 0.32), 
+        look: isMobile ? new THREE.Vector3(0.85, 0.95, -0.15) : new THREE.Vector3(0.85, 0.85, -0.15) 
+      }
+    };
+
+    let cameraState = 'idle'; // 'idle' | 'focusing' | 'focused' | 'returning'
+    let camTweenFrom = new THREE.Vector3();
+    let camTweenLookFrom = new THREE.Vector3();
+    let camTweenTo = new THREE.Vector3();
+    let camTweenLookTo = new THREE.Vector3();
+    let camTweenProgress = 0;
+    let camTweenDuration = 1.0;
+    let currentLookAt = DESK_LOOK_AT.clone();
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function focusCameraOn(name, duration = 1.1) {
+      const target = CAMERA_FOCUS[name];
+      if (!target) return;
+      camTweenFrom.copy(camera.position);
+      camTweenLookFrom.copy(currentLookAt);
+      camTweenTo.copy(target.pos);
+      camTweenLookTo.copy(target.look);
+      camTweenProgress = 0;
+      camTweenDuration = duration;
+      cameraState = 'focusing';
+    }
+
+    // Smooth return to main desk
+    function returnCameraToDesk(duration = 1.1) {
+      camTweenFrom.copy(camera.position);
+      camTweenLookFrom.copy(currentLookAt);
+      camTweenTo.copy(initialCamPos);
+      camTweenLookTo.copy(DESK_LOOK_AT);
+      camTweenProgress = 0;
+      camTweenDuration = duration;
+      cameraState = 'returning';
+    }
 
     // Renderer setup (Optimized precision & pixelRatio limit for mobile performance)
     const renderer = new THREE.WebGLRenderer({
@@ -510,6 +901,13 @@
           o.start(now + idx * 0.08);
           o.stop(now + 0.6 + idx * 0.08);
         });
+      } else if (type === 'pageFlip') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.linearRampToValueAtTime(150, now + 0.25);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+        osc.start(); osc.stop(now + 0.25);
       }
     }
 
@@ -601,6 +999,8 @@
     const glitchParticles = new THREE.Points(pGeometry, pMaterial);
     scene.add(glitchParticles);
 
+
+
     // Frame 6: Concentric Vortex Rings (Optimized for mobile)
     const vortexGroup = new THREE.Group();
     const vortexCount = isMobile ? 7 : 14;
@@ -614,7 +1014,6 @@
     }
     scene.add(vortexGroup);
 
-
     // --- 5. MODELS LOADING & PRELOADER SETUP ---
     const interactiveObjects = [];
     const loadingManager = new THREE.LoadingManager();
@@ -627,7 +1026,47 @@
       pencil: 'Desk/models/pencil.glb',
       book: 'Desk/models/book.glb',
       monitor: 'Desk/models/monitor.glb',
-      cup: 'Desk/models/cup.glb'
+      cup: 'Desk/models/cup.glb',
+      passport: 'Desk/models/passport.glb'
+    };
+
+    // --- Mock / placeholder data powering the Passport pages ---
+    // Swap this object out for real data later without touching the render code.
+    const PASSPORT_MOCK_DATA = {
+      profile: {
+        initials: 'MM',
+        name: 'Monam Munir',
+        studentId: 'IST-CS-2022-0451',
+        program: 'BS Computer Science',
+        campus: 'KICSIT, Kahuta Campus',
+        issued: 'Sep 2022',
+        status: 'Active',
+        focus: 'Quantum Cryptography (FYP)'
+      },
+      modules: [
+        { name: 'Introduction to the Desk',      pct: 100 },
+        { name: 'Cryptography Fundamentals',     pct: 82 },
+        { name: 'Post-Quantum Algorithms',       pct: 65 },
+        { name: 'Secure Messaging Protocols',    pct: 40 },
+        { name: 'MERN Stack Essentials',         pct: 100 }
+      ],
+      quizzes: [
+        { name: 'Classical vs PQ Crypto Quiz', date: '12 Jun 2026', score: '9/10',  passed: true },
+        { name: 'Key Exchange Basics',         date: '02 Jul 2026', score: '7/10',  passed: true },
+        { name: 'Lattice Cryptography',        date: '20 Jul 2026', score: '5/10',  passed: false },
+        { name: 'Secure Chat Protocol Design',  date: '10 Aug 2026', score: '8/10', passed: true }
+      ],
+      achievements: {
+        stats: { points: 1240, streak: 6, badges: 5 },
+        badges: [
+          { icon: '🏆', title: 'First Module Complete', desc: 'Finished your first module' },
+          { icon: '🔑', title: 'Crypto Curious', desc: 'Completed 3 crypto modules' },
+          { icon: '🔥', title: 'Fast Learner', desc: '5-day activity streak' },
+          { icon: '🎯', title: 'Quiz Ace', desc: 'Scored 90%+: on a quiz' },
+          { icon: '📚', title: 'Bookworm', desc: 'Opened the notebook 10 times' },
+          { icon: '🧭', title: 'Explorer', desc: 'Interacted with every desk object' }
+        ]
+      }
     };
 
     loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
@@ -991,6 +1430,85 @@
     });
 
 
+    // J. Passport Group (Sitting on desk top Y = 0.80, right side)
+    const passportGroup = new THREE.Group();
+    passportGroup.name = 'passport';
+    const deskPassportPos = new THREE.Vector3(0.85, DESK_SURFACE_Y, -0.05);
+    passportGroup.position.set(0.85, -8.0, -0.05); // Target Y is DESK_SURFACE_Y
+    passportGroup.rotation.set(0, -0.25, 0);
+    scene.add(passportGroup);
+
+    // Hinge used for the opening animation. If the loaded GLB contains a child
+    // object whose name includes "cover" it will be re-parented onto this hinge
+    // automatically; otherwise the whole booklet tilts open as a fallback.
+    const passportCoverPivot = new THREE.Group();
+    passportCoverPivot.position.set(-0.09, 0.015, 0);
+    passportGroup.add(passportCoverPivot);
+    let passportHasDedicatedCover = false;
+    let passportWholeMesh = null; // fallback: whole model used for a simple tilt-open animation
+
+    let passportState = 'closed'; // 'closed' | 'opening' | 'open' | 'closing'
+    let passportCoverProgress = 0;
+    let passportHoverTarget = 0;
+    let passportHoverAmount = 0;
+
+    gltfLoader.load(MODEL_PATHS.passport, (gltf) => {
+      const root = gltf.scene;
+      // Try to find a dedicated "cover" node to hinge open; otherwise fall back
+      // to tilting the whole booklet.
+      let coverNode = null;
+      root.traverse((child) => {
+        if (!coverNode && /cover/i.test(child.name)) coverNode = child;
+      });
+
+      setupLoadedModel(root, 'passport', passportGroup, null, 0.22);
+
+      if (coverNode) {
+        // Re-parent the cover mesh onto the hinge pivot, preserving its world transform.
+        const worldPos = new THREE.Vector3();
+        coverNode.getWorldPosition(worldPos);
+        passportGroup.worldToLocal(worldPos);
+        coverNode.parent.remove(coverNode);
+        passportCoverPivot.add(coverNode);
+        coverNode.position.copy(worldPos).sub(passportCoverPivot.position);
+        passportHasDedicatedCover = true;
+      } else {
+        passportWholeMesh = root;
+      }
+    }, undefined, () => {
+      // --- Fallback procedural passport booklet ---
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x14213d, roughness: 0.55 });
+      const pagesMat = new THREE.MeshStandardMaterial({ color: 0xf3ead3, roughness: 0.9 });
+      const trimMat = new THREE.MeshStandardMaterial({ color: 0xd8c17a, roughness: 0.4, metalness: 0.3 });
+
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.24), bodyMat);
+      base.name = 'passport';
+      base.castShadow = true;
+      base.receiveShadow = true;
+      passportGroup.add(base);
+
+      const pages = new THREE.Mesh(new THREE.BoxGeometry(0.165, 0.014, 0.225), pagesMat);
+      pages.position.y = 0.011;
+      pages.name = 'passport';
+      passportGroup.add(pages);
+
+      const emblem = new THREE.Mesh(new THREE.CircleGeometry(0.03, 24), trimMat);
+      emblem.rotation.x = -Math.PI / 2;
+      emblem.position.set(0, 0.021, 0);
+      emblem.name = 'passport';
+      passportGroup.add(emblem);
+
+      const cover = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.02, 0.24), bodyMat);
+      cover.position.set(0.09, 0, 0);
+      cover.name = 'passport';
+      passportCoverPivot.add(cover);
+      passportWholeMesh = null;
+      passportHasDedicatedCover = true;
+
+      interactiveObjects.push(base, pages, emblem, cover);
+    });
+
+
     // --- 6. SCROLLTIMELINE & TRANSITIONS ---
     function initScrollTimeline() {
       const mainTl = gsap.timeline({
@@ -1087,6 +1605,7 @@
       .to(bookGroup.position, { y: DESK_SURFACE_Y, duration: 2.0, ease: "back.out(1.1)" }, 15.8)
       .to(mugGroup.position, { y: DESK_SURFACE_Y, duration: 2.0, ease: "back.out(1.1)" }, 15.9)
       .to(pencilGroup.position, { y: DESK_SURFACE_Y, duration: 2.0, ease: "back.out(1.1)" }, 16.0)
+      .to(passportGroup.position, { y: DESK_SURFACE_Y, duration: 2.0, ease: "back.out(1.1)" }, 16.1)
 
       // --- STAGE 3: Chef Landing & Pedestal (Progress 85% to 100%, Timeline 15 to 21) ---
       
@@ -1140,6 +1659,16 @@
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(interactiveObjects, true);
         document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+
+        // Passport hover interaction: only reacts while it's sitting closed on the desk.
+        let hoveringPassport = false;
+        if (intersects.length > 0 && passportState === 'closed') {
+          let obj = intersects[0].object;
+          let n = obj.name;
+          while (!n && obj.parent) { obj = obj.parent; n = obj.name; }
+          if (n === 'passport') hoveringPassport = true;
+        }
+        passportHoverTarget = hoveringPassport ? 1 : 0;
       }
     });
 
@@ -1207,6 +1736,11 @@
           playSound('rustle');
           openOverlay('modal-contact');
         }
+        else if (name === 'passport') {
+          if (passportState === 'closed') {
+            openPassport();
+          }
+        }
         else if (name === 'chef') {
           // Trigger cute chef reaction
           triggerChefJump();
@@ -1261,8 +1795,16 @@
     }
 
     // Modal helpers
+    const OVERLAY_TO_FOCUS_OBJECT = {
+      'modal-about': 'notebook',
+      'modal-work': 'monitor',
+      'modal-contact': 'mug'
+    };
+
     window.openOverlay = function(id) {
       document.getElementById(id).classList.add('active');
+      const focusName = OVERLAY_TO_FOCUS_OBJECT[id];
+      if (focusName) focusCameraOn(focusName, 0.9);
     };
 
     window.closeOverlay = function(id) {
@@ -1279,7 +1821,185 @@
         drawCRTScreen();
         playSound('click');
       }
+
+      if (OVERLAY_TO_FOCUS_OBJECT[id]) returnCameraToDesk(0.9);
     };
+
+    // ===================== PASSPORT OPEN / CLOSE FLOW =====================
+    // 1) camera transitions from the desk to the passport
+    // 2) once close, the passport plays its opening (cover-hinge) animation
+    // 3) once open, the HTML "pages" overlay fades in with the page-turn UI
+    function openPassport() {
+      if (passportState !== 'closed') return;
+      passportState = 'opening';
+      passportCoverProgress = 0;
+      playSound('roll');
+      focusCameraOn('passport', 1.0);
+
+      // Wait for the camera to arrive, then hinge the cover open.
+      setTimeout(() => {
+        if (passportState !== 'opening') return;
+        playSound('pageFlip');
+        focusCameraOn('passportOpen', 0.6);
+      }, 950);
+
+      // Once the cover has finished opening, reveal the HTML page UI.
+      setTimeout(() => {
+        if (passportState !== 'opening') return;
+        passportState = 'open';
+        showPassportOverlay();
+      }, 1700);
+    }
+
+    function closePassport() {
+      if (passportState !== 'open') return;
+      passportState = 'closing';
+      hidePassportOverlay();
+      playSound('pageFlip');
+
+      setTimeout(() => {
+        returnCameraToDesk(1.0);
+      }, 350);
+
+      setTimeout(() => {
+        passportState = 'closed';
+      }, 1400);
+    }
+
+    // --- Passport HTML page-turn UI ---
+    const PASSPORT_PAGES = ['profile', 'modules', 'quiz', 'achievements'];
+    let passportCurrentPage = 0;
+    const passportOverlayEl = document.getElementById('passport-overlay');
+    const passportPagesEl = document.getElementById('passportPages');
+    const passportDotsEl = document.getElementById('passportDots');
+    const passportTabsEl = document.getElementById('passportTabs');
+    const passportPrevBtn = document.getElementById('passportPrevBtn');
+    const passportNextBtn = document.getElementById('passportNextBtn');
+    const passportCloseBtn = document.getElementById('passportCloseBtn');
+
+    function renderPassportPageContent(pageKey) {
+      const d = PASSPORT_MOCK_DATA;
+      if (pageKey === 'profile') {
+        const p = d.profile;
+        return `
+          <div class="passport-page-title">Bio-Data Page</div>
+          <div class="passport-page-sub">Student / Profile Information</div>
+          <div class="profile-layout">
+            <div class="profile-photo">${p.initials}</div>
+            <div class="profile-fields">
+              <div class="profile-field"><label>Full Name</label><div class="val">${p.name}</div></div>
+              <div class="profile-field"><label>Student ID</label><div class="val">${p.studentId}</div></div>
+              <div class="profile-field"><label>Program</label><div class="val">${p.program}</div></div>
+              <div class="profile-field"><label>Campus</label><div class="val">${p.campus}</div></div>
+              <div class="profile-field"><label>Date of Issue</label><div class="val">${p.issued}</div></div>
+              <div class="profile-field"><label>Status</label><div class="val">${p.status}</div></div>
+              <div class="profile-field" style="grid-column: span 2;"><label>Current Focus</label><div class="val">${p.focus}</div></div>
+            </div>
+          </div>`;
+      }
+      if (pageKey === 'modules') {
+        const rows = d.modules.map(m => `
+          <div class="module-row">
+            <div class="module-name">${m.name}</div>
+            <div class="module-bar-track"><div class="module-bar-fill" style="width:${m.pct}%;"></div></div>
+            <div class="module-pct">${m.pct}%</div>
+          </div>`).join('');
+        return `
+          <div class="passport-page-title">Module Completion</div>
+          <div class="passport-page-sub">Results &amp; Progress</div>
+          ${rows}`;
+      }
+      if (pageKey === 'quiz') {
+        const rows = d.quizzes.map(q => `
+          <div class="quiz-row">
+            <div class="quiz-name">${q.name}</div>
+            <div class="quiz-date">${q.date}</div>
+            <div class="quiz-score">${q.score}</div>
+            ${q.passed ? `<div class="visa-stamp">Passed</div>` : ''}
+          </div>`).join('');
+        return `
+          <div class="passport-page-title">Visa &amp; Quiz Stamps</div>
+          <div class="passport-page-sub">Activity / Quiz Results</div>
+          ${rows}`;
+      }
+      if (pageKey === 'achievements') {
+        const a = d.achievements;
+        const badges = a.badges.map(b => `
+          <div class="achievement-card">
+            <div class="ach-icon">${b.icon}</div>
+            <div class="ach-title">${b.title}</div>
+            <div class="ach-desc">${b.desc}</div>
+          </div>`).join('');
+        return `
+          <div class="passport-page-title">Achievements</div>
+          <div class="passport-page-sub">Activity Summary</div>
+          <div class="achievement-summary-row">
+            <div class="achievement-stat"><div class="stat-num">${a.stats.points}</div><div class="stat-label">Points</div></div>
+            <div class="achievement-stat"><div class="stat-num">${a.stats.streak} days</div><div class="stat-label">Streak</div></div>
+            <div class="achievement-stat"><div class="stat-num">${a.stats.badges}</div><div class="stat-label">Badges</div></div>
+          </div>
+          <div class="achievements-grid">${badges}</div>`;
+      }
+      return '';
+    }
+
+    function buildPassportPages() {
+      passportPagesEl.innerHTML = '';
+      passportDotsEl.innerHTML = '';
+      PASSPORT_PAGES.forEach((key, i) => {
+        const pageEl = document.createElement('div');
+        pageEl.className = 'passport-page';
+        pageEl.dataset.index = i;
+        pageEl.innerHTML = renderPassportPageContent(key);
+        passportPagesEl.appendChild(pageEl);
+
+        const dot = document.createElement('div');
+        dot.className = 'passport-dot';
+        dot.addEventListener('click', () => goToPassportPage(i));
+        passportDotsEl.appendChild(dot);
+      });
+    }
+
+    function goToPassportPage(index) {
+      if (index < 0 || index >= PASSPORT_PAGES.length) return;
+      const prevIndex = passportCurrentPage;
+      passportCurrentPage = index;
+      playSound('pageFlip');
+
+      [...passportPagesEl.children].forEach((el, i) => {
+        el.classList.remove('active', 'prev');
+        if (i === index) el.classList.add('active');
+        else if (i < index) el.classList.add('prev');
+      });
+      [...passportTabsEl.children].forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+      [...passportDotsEl.children].forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+
+      passportPrevBtn.disabled = index === 0;
+      passportNextBtn.disabled = index === PASSPORT_PAGES.length - 1;
+    }
+
+    function showPassportOverlay() {
+      buildPassportPages();
+      passportCurrentPage = 0;
+      goToPassportPage(0);
+      passportOverlayEl.classList.add('active');
+    }
+
+    function hidePassportOverlay() {
+      passportOverlayEl.classList.remove('active');
+    }
+
+    passportPrevBtn.addEventListener('click', () => goToPassportPage(passportCurrentPage - 1));
+    passportNextBtn.addEventListener('click', () => goToPassportPage(passportCurrentPage + 1));
+    passportTabsEl.addEventListener('click', (e) => {
+      const tab = e.target.closest('.passport-tab');
+      if (tab) goToPassportPage(parseInt(tab.dataset.page, 10));
+    });
+    passportCloseBtn.addEventListener('click', closePassport);
 
     // --- 9. RENDER & ANIMATION LOOP ---
     const clock = new THREE.Clock();
@@ -1293,14 +2013,34 @@
       haloRing.rotation.z += 0.003;
       helixGroup.rotation.z += 0.002;
 
-      // 1. Camera Parallax (Only when user is fully scrolled to the bottom)
+      // 1. Camera: parallax while idle, smooth tween while focusing/returning
       if (scrollProgress > 0.98) {
-        const targetCamX = finalCamPos.x + normalizedMouse.x * 0.25;
-        const targetCamY = finalCamPos.y - normalizedMouse.y * 0.15;
-        camera.position.x += (targetCamX - camera.position.x) * 0.05;
-        camera.position.y += (targetCamY - camera.position.y) * 0.05;
-        camera.lookAt(0, 0.65, 0);
+        if (cameraState === 'idle') {
+          const targetCamX = finalCamPos.x + normalizedMouse.x * 0.25;
+          const targetCamY = finalCamPos.y - normalizedMouse.y * 0.15;
+          camera.position.x += (targetCamX - camera.position.x) * 0.05;
+          camera.position.y += (targetCamY - camera.position.y) * 0.05;
+          currentLookAt.copy(DESK_LOOK_AT);
+          camera.lookAt(currentLookAt);
+        } else if (cameraState === 'focusing' || cameraState === 'returning') {
+          camTweenProgress += delta / camTweenDuration;
+          const t = easeInOutCubic(Math.min(camTweenProgress, 1.0));
+          camera.position.lerpVectors(camTweenFrom, camTweenTo, t);
+          currentLookAt.lerpVectors(camTweenLookFrom, camTweenLookTo, t);
+          camera.lookAt(currentLookAt);
+          if (camTweenProgress >= 1.0) {
+            cameraState = cameraState === 'focusing' ? 'focused' : 'idle';
+          }
+        } else if (cameraState === 'focused') {
+          // gentle subtle parallax while parked on a focused object
+          const fx = camTweenTo.x + normalizedMouse.x * 0.04;
+          const fy = camTweenTo.y - normalizedMouse.y * 0.03;
+          camera.position.x += (fx - camera.position.x) * 0.05;
+          camera.position.y += (fy - camera.position.y) * 0.05;
+          camera.lookAt(currentLookAt);
+        }
       } else {
+        cameraState = 'idle';
         camera.lookAt(cameraTarget);
       }
 
@@ -1414,6 +2154,24 @@
         const swayY = chefInitialPos.y + Math.cos(elapsedTime * 1.5) * 0.02;
         chefModelInstance.position.x = THREE.MathUtils.lerp(chefModelInstance.position.x, swayX, 0.05);
         chefModelInstance.position.y = THREE.MathUtils.lerp(chefModelInstance.position.y, swayY, 0.05);
+      }
+
+      // 9. Passport hover lift (only while sitting closed on the desk)
+      passportHoverAmount += (passportHoverTarget - passportHoverAmount) * 0.15;
+      passportGroup.position.y = (scrollProgress > 0.95 ? DESK_SURFACE_Y : passportGroup.position.y) + passportHoverAmount * 0.025;
+      const passportHoverScale = 1 + passportHoverAmount * 0.06;
+      passportGroup.scale.set(passportHoverScale, passportHoverScale, passportHoverScale);
+
+      // 10. Passport Opening / Closing Animation
+      const passportCoverTargetAngle =
+        (passportState === 'open' || passportState === 'opening') ? -Math.PI * 0.92 : 0;
+      if (passportHasDedicatedCover) {
+        passportCoverPivot.rotation.z += (passportCoverTargetAngle - passportCoverPivot.rotation.z) * 0.09;
+      } else if (passportWholeMesh) {
+        // Fallback: no distinct cover node was found on the loaded model, so gently
+        // tilt the whole booklet toward the camera to read as "opening".
+        const tiltTarget = (passportState === 'open' || passportState === 'opening') ? -0.55 : 0;
+        passportWholeMesh.rotation.x += (tiltTarget - passportWholeMesh.rotation.x) * 0.09;
       }
 
       renderer.render(scene, camera);
