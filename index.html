@@ -707,12 +707,12 @@
         look: isMobile ? new THREE.Vector3(-0.25, 0.96, -0.1) : new THREE.Vector3(-0.25, 0.86, -0.1) 
       },
       passport: { 
-        pos: isMobile ? new THREE.Vector3(0.85, 1.62, 1.85) : new THREE.Vector3(0.85, 1.12, 0.55),  
-        look: isMobile ? new THREE.Vector3(0.85, 0.95, -0.15) : new THREE.Vector3(0.85, 0.85, -0.15) 
+        pos: isMobile ? new THREE.Vector3(0.55, 1.62, 1.85) : new THREE.Vector3(0.85, 1.12, 0.55),  
+        look: isMobile ? new THREE.Vector3(0.55, 0.95, -0.15) : new THREE.Vector3(0.85, 0.85, -0.15) 
       },
       passportOpen: { 
-        pos: isMobile ? new THREE.Vector3(0.85, 1.72, 1.5) : new THREE.Vector3(0.85, 1.22, 0.32), 
-        look: isMobile ? new THREE.Vector3(0.85, 0.95, -0.15) : new THREE.Vector3(0.85, 0.85, -0.15) 
+        pos: isMobile ? new THREE.Vector3(0.55, 1.72, 1.5) : new THREE.Vector3(0.85, 1.22, 0.32), 
+        look: isMobile ? new THREE.Vector3(0.55, 0.95, -0.15) : new THREE.Vector3(0.85, 0.85, -0.15) 
       }
     };
 
@@ -1439,8 +1439,11 @@
     // J. Passport Group (Sitting on desk top Y = 0.80, right side)
     const passportGroup = new THREE.Group();
     passportGroup.name = 'passport';
-    const deskPassportPos = new THREE.Vector3(0.85, DESK_SURFACE_Y, -0.05);
-    passportGroup.position.set(0.85, -8.0, -0.05); // Target Y is DESK_SURFACE_Y
+    // Shift position closer to center on mobile portrait viewports to prevent clipping
+    const deskPassportPos = isMobile
+      ? new THREE.Vector3(0.55, DESK_SURFACE_Y, 0.1)
+      : new THREE.Vector3(0.85, DESK_SURFACE_Y, -0.05);
+    passportGroup.position.set(deskPassportPos.x, -8.0, deskPassportPos.z); // Target Y is DESK_SURFACE_Y
     passportGroup.rotation.set(0, -0.25, 0);
     scene.add(passportGroup);
 
@@ -1469,13 +1472,15 @@
 
       setupLoadedModel(root, 'passport', passportGroup, null, 0.22);
 
+      // Force update of world matrices so getWorldPosition calculates accurate coordinates
+      scene.updateMatrixWorld(true);
+
       if (coverNode) {
         // Re-parent the cover mesh onto the hinge pivot, preserving its world transform.
         const worldPos = new THREE.Vector3();
         coverNode.getWorldPosition(worldPos);
         passportGroup.worldToLocal(worldPos);
-        coverNode.parent.remove(coverNode);
-        passportCoverPivot.add(coverNode);
+        passportCoverPivot.add(coverNode); // Object3D.add automatically handles removal from old parent
         coverNode.position.copy(worldPos).sub(passportCoverPivot.position);
         passportHasDedicatedCover = true;
       } else {
@@ -2162,11 +2167,15 @@
         chefModelInstance.position.y = THREE.MathUtils.lerp(chefModelInstance.position.y, swayY, 0.05);
       }
 
-      // 9. Passport hover lift (only while sitting closed on the desk)
+      // 9. Passport hover lift (only while sitting closed on the desk at the bottom)
       passportHoverAmount += (passportHoverTarget - passportHoverAmount) * 0.15;
-      passportGroup.position.y = (scrollProgress > 0.95 ? DESK_SURFACE_Y : passportGroup.position.y) + passportHoverAmount * 0.025;
-      const passportHoverScale = 1 + passportHoverAmount * 0.06;
-      passportGroup.scale.set(passportHoverScale, passportHoverScale, passportHoverScale);
+      if (scrollProgress > 0.95) {
+        passportGroup.position.y = DESK_SURFACE_Y + passportHoverAmount * 0.025;
+        const passportHoverScale = 1 + passportHoverAmount * 0.06;
+        passportGroup.scale.set(passportHoverScale, passportHoverScale, passportHoverScale);
+      } else {
+        passportGroup.scale.set(1, 1, 1);
+      }
 
       // 10. Passport Opening / Closing Animation
       const passportCoverTargetAngle =
