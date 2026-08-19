@@ -1076,7 +1076,7 @@
     };
 
     loadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
-      console.log("Loading progress: " + url + " (" + itemsLoaded + "/" + itemsTotal + ")");
+      console.warn("Loading progress: " + url + " (" + itemsLoaded + "/" + itemsTotal + ")");
       const progress = Math.round((itemsLoaded / itemsTotal) * 100);
       const percentEl = document.getElementById('loader-percent');
       if (percentEl) percentEl.textContent = progress + '%';
@@ -1087,7 +1087,7 @@
     };
 
     loadingManager.onLoad = function () {
-      console.log("All assets loaded successfully!");
+      console.warn("All assets loaded successfully!");
       const preloader = document.getElementById('preloader');
       if (preloader) {
         preloader.classList.add('fade-out');
