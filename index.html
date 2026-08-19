@@ -652,6 +652,7 @@
   <script type="module">
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
     gsap.registerPlugin(ScrollTrigger);
 
@@ -1018,6 +1019,11 @@
     const interactiveObjects = [];
     const loadingManager = new THREE.LoadingManager();
     const gltfLoader = new GLTFLoader(loadingManager);
+
+    // Configure Draco Loader using Google CDN
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    gltfLoader.setDRACOLoader(dracoLoader);
 
     const MODEL_PATHS = {
       chef: 'Chef Animation/character.glb',
