@@ -1,0 +1,10 @@
+Drop your passport.glb file in this folder (models/passport.glb).
+The scene already points to it — MODEL_PATHS.passport = 'models/passport.glb'.
+
+If your GLB has a separate mesh/node whose name contains "cover"
+(case-insensitive, e.g. "Cover", "PassportCover"), the code will automatically
+detect it and hinge-animate just that piece open, like a real passport.
+If no such node is found, the whole booklet will do a gentle tilt-open instead.
+
+Until you add the file, a procedural placeholder passport (navy booklet with
+a gold emblem) is used automatically, so everything is testable right now.
