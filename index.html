@@ -1102,6 +1102,9 @@
     function setupLoadedModel(gltfScene, name, containerGroup, position, targetSize = 1.0, isClickable = true) {
       gltfScene.name = name;
       
+      // Force update matrices before computing the bounding box
+      gltfScene.updateMatrixWorld(true);
+      
       // Calculate box and dimensions
       let box = new THREE.Box3().setFromObject(gltfScene);
       let size = box.getSize(new THREE.Vector3());
@@ -1111,6 +1114,9 @@
         const scale = targetSize / maxDim;
         gltfScene.scale.set(scale, scale, scale);
       }
+
+      // Force update matrices again after applying the scale
+      gltfScene.updateMatrixWorld(true);
 
       // Snaps model bottom surface to container Y=0 and centers X/Z
       box = new THREE.Box3().setFromObject(gltfScene);
